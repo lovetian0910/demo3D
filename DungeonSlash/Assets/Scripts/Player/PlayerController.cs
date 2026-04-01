@@ -7,23 +7,20 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float rotationSpeed = 720f;
     [SerializeField] private float gravity = -20f;
 
-    [Header("Dodge Roll")]
-    [SerializeField] private float rollSpeed = 12f;
-    [SerializeField] private float rollDuration = 0.4f;
-    [SerializeField] private float rollCooldown = 0.8f;
+    [Header("Jump")]
+    [SerializeField] private float jumpHeight = 1.5f;
 
     private CharacterController controller;
     private Vector3 velocity;
-    private float rollTimer;
-    private float rollCooldownTimer;
-    private Vector3 rollDirection;
-    private bool isRolling;
     private bool isMoving;
+    private bool isJumping;
     private PlayerHealth playerHealth;
 
     // 供其他脚本查询状态
-    public bool IsRolling => isRolling;
+    public bool IsRolling => false; // 保留接口兼容，不再翻滚
     public bool IsMoving => isMoving;
+    public bool IsJumping => isJumping;
+    public bool IsGrounded => controller.isGrounded;
 
     private void Awake()
     {
@@ -35,24 +32,16 @@ public class PlayerController : MonoBehaviour
     {
         if (playerHealth != null && playerHealth.IsDead) return;
 
-        if (isRolling)
-        {
-            UpdateRoll();
-            return; // 翻滚时不接受其他输入
-        }
-
         HandleMovement();
-        HandleDodgeInput();
+        HandleJumpInput();
         ApplyGravity();
     }
 
     private void HandleMovement()
     {
-        // 获取输入（WASD 或方向键）
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
-        // 基于相机方向计算移动方向
         Camera cam = Camera.main;
         Vector3 camForward = cam.transform.forward;
         Vector3 camRight = cam.transform.right;
@@ -67,71 +56,37 @@ public class PlayerController : MonoBehaviour
 
         if (isMoving)
         {
-            // 角色朝移动方向旋转
             Quaternion targetRotation = Quaternion.LookRotation(moveDir);
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-            // 移动
             controller.Move(moveDir * moveSpeed * Time.deltaTime);
         }
     }
 
-    private void HandleDodgeInput()
+    private void HandleJumpInput()
     {
-        rollCooldownTimer -= Time.deltaTime;
-
-        if (Input.GetKeyDown(KeyCode.Space) && rollCooldownTimer <= 0f)
+        // 只有在地面上才能跳
+        if (Input.GetKeyDown(KeyCode.Space) && controller.isGrounded)
         {
-            StartRoll();
-        }
-    }
-
-    private void StartRoll()
-    {
-        isRolling = true;
-        rollTimer = rollDuration;
-        rollCooldownTimer = rollCooldown;
-
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-
-        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
-        {
-            Camera cam = Camera.main;
-            Vector3 camForward = cam.transform.forward;
-            Vector3 camRight = cam.transform.right;
-            camForward.y = 0f;
-            camRight.y = 0f;
-            camForward.Normalize();
-            camRight.Normalize();
-            rollDirection = (camForward * v + camRight * h).normalized;
-        }
-        else
-        {
-            rollDirection = transform.forward;
-        }
-    }
-
-    private void UpdateRoll()
-    {
-        rollTimer -= Time.deltaTime;
-
-        if (rollTimer <= 0f)
-        {
-            isRolling = false;
-            return;
+            // 物理公式: v = sqrt(2 * g * h)
+            // 要跳到 jumpHeight 高度，需要的初速度
+            velocity.y = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(gravity));
+            isJumping = true;
         }
 
-        controller.Move(rollDirection * rollSpeed * Time.deltaTime);
-        ApplyGravity();
+        // 落地后重置跳跃状态
+        if (isJumping && controller.isGrounded && velocity.y <= 0f)
+        {
+            isJumping = false;
+        }
     }
 
     private void ApplyGravity()
     {
         if (controller.isGrounded && velocity.y < 0f)
         {
-            velocity.y = -2f;
+            velocity.y = -2f; // 保持小的向下力确保 isGrounded 判定
         }
 
         velocity.y += gravity * Time.deltaTime;
