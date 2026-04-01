@@ -18,18 +18,23 @@ public class PlayerController : MonoBehaviour
     private float rollCooldownTimer;
     private Vector3 rollDirection;
     private bool isRolling;
+    private bool isMoving;
+    private PlayerHealth playerHealth;
 
     // 供其他脚本查询状态
     public bool IsRolling => isRolling;
-    public bool IsMoving => controller.velocity.magnitude > 0.1f;
+    public bool IsMoving => isMoving;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        playerHealth = GetComponent<PlayerHealth>();
     }
 
     private void Update()
     {
+        if (playerHealth != null && playerHealth.IsDead) return;
+
         if (isRolling)
         {
             UpdateRoll();
@@ -58,7 +63,9 @@ public class PlayerController : MonoBehaviour
 
         Vector3 moveDir = (camForward * v + camRight * h).normalized;
 
-        if (moveDir.magnitude > 0.1f)
+        isMoving = moveDir.magnitude > 0.1f;
+
+        if (isMoving)
         {
             // 角色朝移动方向旋转
             Quaternion targetRotation = Quaternion.LookRotation(moveDir);
