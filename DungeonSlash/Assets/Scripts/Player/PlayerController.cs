@@ -10,6 +10,9 @@ public class PlayerController : MonoBehaviour
     [Header("Jump")]
     [SerializeField] private float jumpHeight = 1.5f;
 
+    [Header("Fall Death")]
+    [SerializeField] private float fallDeathY = -20f; // 低于这个高度判定坠落死亡
+
     private CharacterController controller;
     private Vector3 velocity;
     private bool isMoving;
@@ -31,6 +34,16 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         if (playerHealth != null && playerHealth.IsDead) return;
+
+        // 坠落死亡检测
+        if (transform.position.y < fallDeathY)
+        {
+            if (playerHealth != null && !playerHealth.IsDead)
+            {
+                playerHealth.TakeDamage(9999f, Vector3.zero);
+            }
+            return;
+        }
 
         HandleMovement();
         HandleJumpInput();
