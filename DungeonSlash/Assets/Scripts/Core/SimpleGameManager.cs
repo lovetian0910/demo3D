@@ -10,11 +10,11 @@ public class SimpleGameManager : MonoBehaviour
 
     [SerializeField] private GameObject gameOverUI;
     [SerializeField] private GameObject victoryUI;
-    [SerializeField] private float checkEnemyInterval = 0.5f; // 每 0.5 秒检查一次，不用每帧检查
+    [SerializeField] private float checkEnemyInterval = 0.5f;
 
     private bool isGameOver;
     private float checkTimer;
-    private bool enemiesExisted; // 确保场景中确实生成过敌人
+    private bool enemiesExisted;
 
     private void Awake()
     {
@@ -34,7 +34,6 @@ public class SimpleGameManager : MonoBehaviour
         if (checkTimer > 0f) return;
         checkTimer = checkEnemyInterval;
 
-        // 查找场景中所有存活的敌人
         EnemyBase[] enemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
 
         if (enemies.Length > 0)
@@ -42,7 +41,6 @@ public class SimpleGameManager : MonoBehaviour
             enemiesExisted = true;
         }
 
-        // 所有敌人都死了且之前确实有过敌人
         if (enemiesExisted && enemies.Length == 0)
         {
             OnAllEnemiesDefeated();
@@ -54,12 +52,14 @@ public class SimpleGameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
 
+        // 显示光标（Play 模式可能隐藏了光标）
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (gameOverUI != null)
         {
             gameOverUI.SetActive(true);
         }
-
-        Invoke(nameof(EnableRestart), 2f);
     }
 
     private void OnAllEnemiesDefeated()
@@ -67,25 +67,20 @@ public class SimpleGameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
 
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (victoryUI != null)
         {
             victoryUI.SetActive(true);
         }
-
-        Invoke(nameof(EnableRestart), 2f);
     }
 
-    private void EnableRestart()
+    /// <summary>
+    /// 由 UI 按钮调用，重新加载场景
+    /// </summary>
+    public void RestartGame()
     {
-        StartCoroutine(WaitForRestart());
-    }
-
-    private System.Collections.IEnumerator WaitForRestart()
-    {
-        while (!Input.anyKeyDown)
-        {
-            yield return null;
-        }
         isGameOver = false;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
