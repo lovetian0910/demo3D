@@ -117,5 +117,10 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         playerAnimator.PlayDeath();
         playerController.enabled = false;
         GetComponent<PlayerCombat>().enabled = false;
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnPlayerDeath();
+        }
     }
 }
