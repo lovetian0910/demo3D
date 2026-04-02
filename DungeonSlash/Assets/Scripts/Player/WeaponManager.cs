@@ -126,6 +126,14 @@ public class WeaponManager : MonoBehaviour
         // 所以 SetParent 后位置和朝向就是对的。
         currentWeaponInstance.transform.SetParent(rightHandBone, worldPositionStays: false);
 
+        // ---- 应用旋转和位置修正 ----
+        // 🎓 为什么需要修正？
+        // 素材包武器 prefab 的 localRotation 是基于导出时的骨骼坐标系预设的。
+        // 如果角色骨骼的本地坐标轴方向和武器预期不一致（常见于不同来源的模型），
+        // 武器就会朝错误方向。通过 WeaponData 配置旋转偏移来修正。
+        currentWeaponInstance.transform.localRotation *= Quaternion.Euler(weaponData.localRotationOffset);
+        currentWeaponInstance.transform.localPosition += weaponData.localPositionOffset;
+
         // ---- 配置碰撞体 ----
         BoxCollider collider = SetupWeaponCollider(weaponData);
 

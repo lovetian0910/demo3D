@@ -36,6 +36,13 @@ public class WeaponData : ScriptableObject
     [Tooltip("重攻击冷却时间（秒）")]
     public float heavyAttackCooldown = 1.2f;
 
+    [Header("挂载偏移")]
+    [Tooltip("武器挂到手骨后的旋转修正（欧拉角）。如果武器朝向不对，调整这里")]
+    public Vector3 localRotationOffset = new Vector3(0f, 180f, 0f);
+
+    [Tooltip("武器挂到手骨后的位置修正。通常不需要改")]
+    public Vector3 localPositionOffset = Vector3.zero;
+
     [Header("碰撞体设置")]
     [Tooltip("武器 BoxCollider 的中心偏移")]
     public Vector3 colliderCenter = new Vector3(0f, 0f, 0.003f);
