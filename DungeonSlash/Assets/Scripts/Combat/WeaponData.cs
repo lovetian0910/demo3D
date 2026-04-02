@@ -36,6 +36,19 @@ public class WeaponData : ScriptableObject
     [Tooltip("重攻击冷却时间（秒）")]
     public float heavyAttackCooldown = 1.2f;
 
+    [Header("攻击判定时机")]
+    [Tooltip("轻攻击：动画开始后多久激活碰撞体（抬手蓄力时间）")]
+    public float lightHitDelay = 0.3f;
+
+    [Tooltip("轻攻击：碰撞体保持激活多久（下挥打击时间）")]
+    public float lightHitDuration = 0.2f;
+
+    [Tooltip("重攻击：动画开始后多久激活碰撞体（蓄力更久）")]
+    public float heavyHitDelay = 0.45f;
+
+    [Tooltip("重攻击：碰撞体保持激活多久")]
+    public float heavyHitDuration = 0.25f;
+
     [Header("挂载偏移")]
     [Tooltip("武器挂到手骨后的旋转修正（欧拉角）。如果武器朝向不对，调整这里")]
     public Vector3 localRotationOffset = new Vector3(0f, 0f, 180f);

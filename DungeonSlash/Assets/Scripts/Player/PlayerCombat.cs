@@ -3,19 +3,19 @@ using UnityEngine;
 /// <summary>
 /// 玩家战斗系统。
 ///
-/// 🎓 重构要点：伤害和冷却值不再硬编码在这里，
-/// 而是通过 EquipWeapon() 从 WeaponData（ScriptableObject）读取。
+/// 🎓 重构要点：伤害、冷却、碰撞体激活时机全部从 WeaponData（ScriptableObject）读取。
 /// 这就是「数据驱动设计」——改数值只需要改 ScriptableObject 资产，不用改代码。
 ///
-/// weaponCollider 也改为运行时由 WeaponManager 设置，
-/// 因为武器模型（包括碰撞体）是动态实例化的。
+/// 🎓 攻击判定时机（Active Frames）：
+/// 动作游戏的攻击动画分为三个阶段：
+///   1. Wind-up（蓄力）：抬手/蓄力，碰撞体关闭，玩家可被打断
+///   2. Strike（打击）：下挥/出击，碰撞体激活，这时才能造成伤害
+///   3. Recovery（收招）：收刀/恢复，碰撞体关闭，有短暂硬直
+/// hitDelay 控制 Wind-up 的时长，hitDuration 控制 Strike 的时长。
+/// 如果 hitDelay 太短，抬手就判定命中，体验会很差。
 /// </summary>
 public class PlayerCombat : MonoBehaviour
 {
-    [Header("Weapon Hit Timing")]
-    [SerializeField] private float hitActiveDelay = 0.15f;  // 攻击开始后多久激活碰撞
-    [SerializeField] private float hitActiveDuration = 0.3f; // 碰撞持续多久
-
     // 当前武器数据（由 WeaponManager 通过 EquipWeapon 设置）
     private WeaponData currentWeaponData;
     private Collider weaponCollider;
@@ -24,6 +24,7 @@ public class PlayerCombat : MonoBehaviour
     private PlayerController playerController;
     private float attackCooldownTimer;
     private float currentAttackDamage;
+    private float currentHitDuration; // 当前攻击的碰撞持续时间
     private bool isAttacking;
     private float hitTimer;
     private bool hitActive;
@@ -43,10 +44,6 @@ public class PlayerCombat : MonoBehaviour
 
     /// <summary>
     /// 由 WeaponManager 调用，装备新武器时更新战斗数据和碰撞体引用。
-    ///
-    /// 🎓 为什么 Collider 要从外部传入？
-    /// 因为武器模型是运行时 Instantiate 的，碰撞体在武器 prefab 上，
-    /// PlayerCombat 无法提前在 Inspector 中拖拽引用。
     /// </summary>
     public void EquipWeapon(WeaponData data, Collider collider)
     {
@@ -73,12 +70,14 @@ public class PlayerCombat : MonoBehaviour
 
             if (hitTimer <= 0f && !hitActive)
             {
+                // Wind-up 阶段结束 → 进入 Strike 阶段，激活碰撞体
                 OnAttackHitStart();
                 hitActive = true;
-                hitTimer = hitActiveDuration;
+                hitTimer = currentHitDuration;
             }
             else if (hitActive && hitTimer <= 0f)
             {
+                // Strike 阶段结束 → 进入 Recovery 阶段，关闭碰撞体
                 OnAttackHitEnd();
                 hitActive = false;
             }
@@ -112,7 +111,9 @@ public class PlayerCombat : MonoBehaviour
         isAttacking = true;
         currentAttackDamage = currentWeaponData.lightDamage;
         attackCooldownTimer = currentWeaponData.lightAttackCooldown;
-        hitTimer = hitActiveDelay;
+        // 🎓 轻攻击用轻攻击的判定时机——蓄力短，出手快
+        hitTimer = currentWeaponData.lightHitDelay;
+        currentHitDuration = currentWeaponData.lightHitDuration;
         hitActive = false;
         playerAnimator.PlayLightAttack();
     }
@@ -122,7 +123,9 @@ public class PlayerCombat : MonoBehaviour
         isAttacking = true;
         currentAttackDamage = currentWeaponData.heavyDamage;
         attackCooldownTimer = currentWeaponData.heavyAttackCooldown;
-        hitTimer = hitActiveDelay;
+        // 🎓 重攻击蓄力更久，但打击窗口也稍长——大开大合的感觉
+        hitTimer = currentWeaponData.heavyHitDelay;
+        currentHitDuration = currentWeaponData.heavyHitDuration;
         hitActive = false;
         playerAnimator.PlayHeavyAttack();
     }
