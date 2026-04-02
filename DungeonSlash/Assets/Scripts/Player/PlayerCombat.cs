@@ -3,38 +3,38 @@ using UnityEngine;
 /// <summary>
 /// 玩家战斗系统。
 ///
-/// 🎓 重构要点：伤害、冷却、碰撞体激活时机全部从 WeaponData（ScriptableObject）读取。
-/// 这就是「数据驱动设计」——改数值只需要改 ScriptableObject 资产，不用改代码。
+/// 🎓 双手持武：
+/// 左手武器对应轻攻击（鼠标左键），右手武器对应重攻击（鼠标右键）。
+/// 每次攻击只激活对应手的碰撞体，另一只手保持关闭。
+/// 这样即使双手都有武器模型，也只有正在出击的那只手能造成伤害。
 ///
 /// 🎓 攻击判定时机（Active Frames）：
-/// 动作游戏的攻击动画分为三个阶段：
-///   1. Wind-up（蓄力）：抬手/蓄力，碰撞体关闭，玩家可被打断
-///   2. Strike（打击）：下挥/出击，碰撞体激活，这时才能造成伤害
-///   3. Recovery（收招）：收刀/恢复，碰撞体关闭，有短暂硬直
-/// hitDelay 控制 Wind-up 的时长，hitDuration 控制 Strike 的时长。
-/// 如果 hitDelay 太短，抬手就判定命中，体验会很差。
+///   1. Wind-up（蓄力）：碰撞体关闭
+///   2. Strike（打击）：碰撞体激活，造成伤害
+///   3. Recovery（收招）：碰撞体关闭
 /// </summary>
 public class PlayerCombat : MonoBehaviour
 {
     // 当前武器数据（由 WeaponManager 通过 EquipWeapon 设置）
     private WeaponData currentWeaponData;
-    private Collider weaponCollider;
+    private Collider leftWeaponCollider;   // 左手武器碰撞体（轻攻击用）
+    private Collider rightWeaponCollider;  // 右手武器碰撞体（重攻击用）
+    private Collider activeCollider;       // 当前攻击正在使用的碰撞体
 
     private PlayerAnimator playerAnimator;
     private PlayerController playerController;
     private float attackCooldownTimer;
     private float currentAttackDamage;
-    private float currentHitDuration; // 当前攻击的碰撞持续时间
+    private float currentHitDuration;
     private bool isAttacking;
     private float hitTimer;
     private bool hitActive;
 
     public bool IsAttacking => isAttacking;
 
-    /// <summary>
-    /// 当前是否有武器装备。在没有武器时禁止攻击。
-    /// </summary>
-    public bool HasWeapon => currentWeaponData != null && weaponCollider != null;
+    public bool HasWeapon => currentWeaponData != null
+        && leftWeaponCollider != null
+        && rightWeaponCollider != null;
 
     private void Awake()
     {
@@ -43,41 +43,42 @@ public class PlayerCombat : MonoBehaviour
     }
 
     /// <summary>
-    /// 由 WeaponManager 调用，装备新武器时更新战斗数据和碰撞体引用。
+    /// 由 WeaponManager 调用，装备新武器时更新双手碰撞体引用。
+    ///
+    /// 🎓 为什么分左右手？
+    /// 轻攻击动画挥的是左手，重攻击动画挥的是右手。
+    /// 如果两只手共用一个碰撞体，另一只手挥动时也会误判命中。
+    /// 分开管理后，每次攻击只激活出击手的碰撞体，精确对应动画。
     /// </summary>
-    public void EquipWeapon(WeaponData data, Collider collider)
+    public void EquipWeapon(WeaponData data, Collider leftCollider, Collider rightCollider)
     {
         currentWeaponData = data;
-        weaponCollider = collider;
+        leftWeaponCollider = leftCollider;
+        rightWeaponCollider = rightCollider;
 
         // 确保碰撞体初始状态关闭
-        if (weaponCollider != null)
-        {
-            weaponCollider.enabled = false;
-        }
+        if (leftWeaponCollider != null) leftWeaponCollider.enabled = false;
+        if (rightWeaponCollider != null) rightWeaponCollider.enabled = false;
 
-        Debug.Log($">>> 装备武器: {data.weaponName} | 轻攻 {data.lightDamage} | 重攻 {data.heavyDamage}");
+        Debug.Log($">>> 装备武器: {data.weaponName} | 轻攻(左手) {data.lightDamage} | 重攻(右手) {data.heavyDamage}");
     }
 
     private void Update()
     {
         attackCooldownTimer -= Time.deltaTime;
 
-        // 管理武器碰撞体的激活时机
         if (isAttacking)
         {
             hitTimer -= Time.deltaTime;
 
             if (hitTimer <= 0f && !hitActive)
             {
-                // Wind-up 阶段结束 → 进入 Strike 阶段，激活碰撞体
                 OnAttackHitStart();
                 hitActive = true;
                 hitTimer = currentHitDuration;
             }
             else if (hitActive && hitTimer <= 0f)
             {
-                // Strike 阶段结束 → 进入 Recovery 阶段，关闭碰撞体
                 OnAttackHitEnd();
                 hitActive = false;
             }
@@ -85,16 +86,8 @@ public class PlayerCombat : MonoBehaviour
             return;
         }
 
-        if (playerController.IsRolling)
-        {
-            return;
-        }
-
-        // 没有武器时不能攻击
-        if (!HasWeapon)
-        {
-            return;
-        }
+        if (playerController.IsRolling) return;
+        if (!HasWeapon) return;
 
         if (Input.GetMouseButtonDown(0) && attackCooldownTimer <= 0f)
         {
@@ -111,10 +104,11 @@ public class PlayerCombat : MonoBehaviour
         isAttacking = true;
         currentAttackDamage = currentWeaponData.lightDamage;
         attackCooldownTimer = currentWeaponData.lightAttackCooldown;
-        // 🎓 轻攻击用轻攻击的判定时机——蓄力短，出手快
         hitTimer = currentWeaponData.lightHitDelay;
         currentHitDuration = currentWeaponData.lightHitDuration;
         hitActive = false;
+        // 🎓 轻攻击 → 激活左手武器碰撞体
+        activeCollider = leftWeaponCollider;
         playerAnimator.PlayLightAttack();
     }
 
@@ -123,26 +117,27 @@ public class PlayerCombat : MonoBehaviour
         isAttacking = true;
         currentAttackDamage = currentWeaponData.heavyDamage;
         attackCooldownTimer = currentWeaponData.heavyAttackCooldown;
-        // 🎓 重攻击蓄力更久，但打击窗口也稍长——大开大合的感觉
         hitTimer = currentWeaponData.heavyHitDelay;
         currentHitDuration = currentWeaponData.heavyHitDuration;
         hitActive = false;
+        // 🎓 重攻击 → 激活右手武器碰撞体
+        activeCollider = rightWeaponCollider;
         playerAnimator.PlayHeavyAttack();
     }
 
     public void OnAttackHitStart()
     {
-        if (weaponCollider != null)
+        if (activeCollider != null)
         {
-            weaponCollider.enabled = true;
+            activeCollider.enabled = true;
         }
     }
 
     public void OnAttackHitEnd()
     {
-        if (weaponCollider != null)
+        if (activeCollider != null)
         {
-            weaponCollider.enabled = false;
+            activeCollider.enabled = false;
         }
         isAttacking = false;
     }
