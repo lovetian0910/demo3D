@@ -134,6 +134,10 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
 
     private void UpdateChase(float distToPlayer)
     {
+        // 🎓 stoppingDistance 让 NavMeshAgent 在到达攻击范围前就减速停下，
+        // 而不是一直冲到玩家身上把玩家挤开。
+        agent.isStopped = false;
+        agent.stoppingDistance = attackRange * 0.8f;
         agent.SetDestination(playerTransform.position);
 
         if (distToPlayer <= attackRange && attackTimer <= 0f)
@@ -145,6 +149,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         {
             agent.ResetPath();
             currentState = EnemyState.Idle;
+            agent.isStopped = true;
         }
     }
 
@@ -168,10 +173,12 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         else if (attackHitDone && attackPhaseTimer <= 0f)
         {
             attackTimer = attackCooldown;
+            agent.isStopped = false; // 恢复移动
 
             if (distToPlayer > detectionRange * 1.5f)
             {
                 currentState = EnemyState.Idle;
+                agent.isStopped = true;
             }
             else
             {
@@ -205,6 +212,10 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         currentState = EnemyState.Attack;
         attackPhaseTimer = attackHitDelay;
         attackHitDone = false;
+
+        // 🎓 攻击时必须停下来！否则 NavMeshAgent 还会继续移动
+        agent.ResetPath();
+        agent.isStopped = true;
 
         if (animator != null)
         {
