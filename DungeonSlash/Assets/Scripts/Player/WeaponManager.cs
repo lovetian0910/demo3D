@@ -213,7 +213,10 @@ public class WeaponManager : MonoBehaviour
         {
             collider.center = weaponData.colliderCenter;
             collider.size = weaponData.colliderSize;
-            collider.enabled = true;
+            // 🎓 不能在这里设 enabled = true！
+            // 碰撞体的开关必须由 PlayerCombat 在攻击时控制。
+            // 如果这里强制开启，走路碰到敌人就会触发伤害。
+            // 要看碰撞体线框：在 Scene 视图中选中武器物体即可看到（不需要 enabled）
         }
     }
 
