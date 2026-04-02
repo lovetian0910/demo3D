@@ -1,15 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 🎓 CharacterController.isGrounded 的坑：
-/// isGrounded 只在上一帧 Move() 有向下接触地面时才为 true。
-/// 跑步经过不平地面时，某些帧会短暂"悬空"导致 isGrounded = false，
-/// 这一帧按空格就跳不起来——玩家觉得"吞输入"了。
-///
-/// 解决方案：Coyote Time（土狼时间）+ Input Buffer（输入缓冲）
-/// - Coyote Time：离地后 0.15 秒内仍可跳跃
-/// - Input Buffer：按空格后 0.15 秒内如果落地，自动执行跳跃
-/// 两者配合可以大幅提升操控手感。大部分动作/平台游戏都有这两个机制。
+/// 🎓 Coyote Time + Input Buffer + 状态互斥
 /// </summary>
 public class PlayerController : MonoBehaviour
 {
@@ -38,6 +30,7 @@ public class PlayerController : MonoBehaviour
     private float jumpBufferTimer;
     private PlayerHealth playerHealth;
     private PlayerAnimator playerAnimator;
+    private PlayerState playerState;
 
     public bool IsRolling => false;
     public bool IsMoving => isMoving;
@@ -49,6 +42,7 @@ public class PlayerController : MonoBehaviour
         controller = GetComponent<CharacterController>();
         playerHealth = GetComponent<PlayerHealth>();
         playerAnimator = GetComponent<PlayerAnimator>();
+        playerState = GetComponent<PlayerState>();
     }
 
     private void Update()
@@ -71,6 +65,13 @@ public class PlayerController : MonoBehaviour
 
     private void HandleMovement()
     {
+        // 🎓 受击/攻击/死亡时不能移动
+        if (!playerState.CanMove)
+        {
+            isMoving = false;
+            return;
+        }
+
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
@@ -98,9 +99,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleJump()
     {
-        // ---- Coyote Time 计时 ----
-        // 🎓 在地面上时持续重置计时器；离地后计时器开始倒计。
-        // 只要计时器 > 0 就视为"可以跳"。
+        // Coyote Time
         if (controller.isGrounded && !isJumping)
         {
             coyoteTimer = coyoteTime;
@@ -110,9 +109,7 @@ public class PlayerController : MonoBehaviour
             coyoteTimer -= Time.deltaTime;
         }
 
-        // ---- Input Buffer 计时 ----
-        // 🎓 按下空格时记录，之后每帧递减。
-        // 如果在缓冲时间内落地，自动触发跳跃——不"吞"玩家的输入。
+        // Input Buffer
         if (Input.GetKeyDown(KeyCode.Space))
         {
             jumpBufferTimer = jumpBufferTime;
@@ -122,21 +119,22 @@ public class PlayerController : MonoBehaviour
             jumpBufferTimer -= Time.deltaTime;
         }
 
-        // ---- 执行跳跃 ----
-        // 条件：有缓冲的跳跃输入 + 在土狼时间内（视为在地面）+ 不在跳跃中
-        if (jumpBufferTimer > 0f && coyoteTimer > 0f && !isJumping)
+        // 🎓 执行跳跃：额外检查 PlayerState.CanJump
+        if (jumpBufferTimer > 0f && coyoteTimer > 0f && !isJumping && playerState.CanJump)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(gravity));
             isJumping = true;
-            playerAnimator.PlayJump(); // 🎓 起跳瞬间触发一次动画
-            coyoteTimer = 0f;      // 用掉 coyote time，防止空中二段跳
-            jumpBufferTimer = 0f;   // 消耗掉缓冲输入
+            playerState.EnterJumping();
+            playerAnimator.PlayJump();
+            coyoteTimer = 0f;
+            jumpBufferTimer = 0f;
         }
 
-        // ---- 落地重置 ----
+        // 落地重置
         if (isJumping && controller.isGrounded && velocity.y <= 0f)
         {
             isJumping = false;
+            playerState.ExitJumping();
         }
     }
 
