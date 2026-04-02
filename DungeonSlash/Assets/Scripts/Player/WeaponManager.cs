@@ -29,6 +29,7 @@ public class WeaponManager : MonoBehaviour
     // 运行时状态
     private Transform rightHandBone;
     private GameObject currentWeaponInstance;
+    private BoxCollider currentWeaponCollider; // 缓存碰撞体引用，供实时预览用
     private int currentWeaponIndex = -1;
     private PlayerCombat playerCombat;
 
@@ -93,6 +94,17 @@ public class WeaponManager : MonoBehaviour
         if (debugLivePreview && currentWeaponInstance != null && CurrentWeaponData != null)
         {
             ApplyWeaponTransform(CurrentWeaponData);
+
+            // 碰撞体也跟着实时更新尺寸和位置
+            // 🎓 在 Scene 视图中，BoxCollider 会显示为绿色线框（Gizmo），
+            // 让你直观地看到攻击判定范围是否覆盖了武器模型。
+            if (currentWeaponCollider != null)
+            {
+                currentWeaponCollider.center = CurrentWeaponData.colliderCenter;
+                currentWeaponCollider.size = CurrentWeaponData.colliderSize;
+                // 调试时保持碰撞体可见（Scene 视图中才能看到绿色线框）
+                currentWeaponCollider.enabled = true;
+            }
         }
     }
 
@@ -144,6 +156,7 @@ public class WeaponManager : MonoBehaviour
 
         // ---- 配置碰撞体 ----
         BoxCollider collider = SetupWeaponCollider(weaponData);
+        currentWeaponCollider = collider; // 缓存引用供实时预览
 
         // ---- 配置 WeaponHitbox 桥接脚本 ----
         SetupWeaponHitbox(collider);

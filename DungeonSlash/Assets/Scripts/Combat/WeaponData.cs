@@ -38,15 +38,15 @@ public class WeaponData : ScriptableObject
 
     [Header("挂载偏移")]
     [Tooltip("武器挂到手骨后的旋转修正（欧拉角）。如果武器朝向不对，调整这里")]
-    public Vector3 localRotationOffset = new Vector3(0f, 180f, 0f);
+    public Vector3 localRotationOffset = new Vector3(0f, 0f, 180f);
 
     [Tooltip("武器挂到手骨后的位置修正。通常不需要改")]
-    public Vector3 localPositionOffset = Vector3.zero;
+    public Vector3 localPositionOffset = new Vector3(-0.1f, 0.1f, 0f);
 
     [Header("碰撞体设置")]
-    [Tooltip("武器 BoxCollider 的中心偏移")]
-    public Vector3 colliderCenter = new Vector3(0f, 0f, 0.003f);
+    [Tooltip("武器 BoxCollider 的中心偏移（相对于武器模型本地坐标）")]
+    public Vector3 colliderCenter = new Vector3(0f, 0f, 0.5f);
 
-    [Tooltip("武器 BoxCollider 的尺寸")]
-    public Vector3 colliderSize = new Vector3(0.003f, 0.001f, 0.005f);
+    [Tooltip("武器 BoxCollider 的尺寸。在 Scene 视图中看绿色线框来调整")]
+    public Vector3 colliderSize = new Vector3(0.3f, 0.3f, 1f);
 }
