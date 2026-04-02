@@ -22,6 +22,10 @@ public class WeaponManager : MonoBehaviour
     [Tooltip("右手骨骼名称，素材包中固定为 RigRArmPalm")]
     [SerializeField] private string rightHandBoneName = "RigRArmPalm";
 
+    [Header("调试")]
+    [Tooltip("开启后，Play 模式下会持续读取 WeaponData 的偏移值并实时应用到武器上。调好后记得关掉")]
+    [SerializeField] private bool debugLivePreview = true;
+
     // 运行时状态
     private Transform rightHandBone;
     private GameObject currentWeaponInstance;
@@ -81,6 +85,15 @@ public class WeaponManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha1)) SwitchWeapon(0);
         else if (Input.GetKeyDown(KeyCode.Alpha2)) SwitchWeapon(1);
         else if (Input.GetKeyDown(KeyCode.Alpha3)) SwitchWeapon(2);
+
+        // 🎓 调试模式：实时预览 WeaponData 中的偏移值
+        // 开启后，你可以在 Play 模式下直接修改 WeaponData 资产的 localRotationOffset / localPositionOffset，
+        // 武器会立刻更新方向和位置。找到正确值后，停止 Play，值会自动保存在 WeaponData 资产中。
+        // （ScriptableObject 的修改在 Play 模式下会被保留，这和 MonoBehaviour 不同！）
+        if (debugLivePreview && currentWeaponInstance != null && CurrentWeaponData != null)
+        {
+            ApplyWeaponTransform(CurrentWeaponData);
+        }
     }
 
     /// <summary>
@@ -127,12 +140,7 @@ public class WeaponManager : MonoBehaviour
         currentWeaponInstance.transform.SetParent(rightHandBone, worldPositionStays: false);
 
         // ---- 应用旋转和位置修正 ----
-        // 🎓 为什么需要修正？
-        // 素材包武器 prefab 的 localRotation 是基于导出时的骨骼坐标系预设的。
-        // 如果角色骨骼的本地坐标轴方向和武器预期不一致（常见于不同来源的模型），
-        // 武器就会朝错误方向。通过 WeaponData 配置旋转偏移来修正。
-        currentWeaponInstance.transform.localRotation *= Quaternion.Euler(weaponData.localRotationOffset);
-        currentWeaponInstance.transform.localPosition += weaponData.localPositionOffset;
+        ApplyWeaponTransform(weaponData);
 
         // ---- 配置碰撞体 ----
         BoxCollider collider = SetupWeaponCollider(weaponData);
@@ -196,6 +204,26 @@ public class WeaponManager : MonoBehaviour
         }
         rb.isKinematic = true;
         rb.useGravity = false;
+    }
+
+    /// <summary>
+    /// 应用 WeaponData 中配置的旋转和位置偏移到当前武器实例。
+    ///
+    /// 🎓 为什么需要修正？
+    /// 素材包武器 prefab 的 localRotation 是基于导出时的骨骼坐标系预设的。
+    /// 如果角色骨骼的本地坐标轴方向和武器预期不一致，武器就会朝错误方向。
+    ///
+    /// 🎓 ScriptableObject 在 Play 模式下的特殊行为：
+    /// MonoBehaviour 的修改在停止 Play 后会回滚，但 ScriptableObject 不会！
+    /// 所以你在 Play 模式下调整 WeaponData 的偏移值，停止后值还在。
+    /// 这是 ScriptableObject 做配置数据的一个额外好处。
+    /// </summary>
+    private void ApplyWeaponTransform(WeaponData weaponData)
+    {
+        // 先重置为 prefab 原始的 localRotation，再叠加偏移
+        // 这样每帧都是从基础值计算，而不是在上一帧的结果上累加
+        currentWeaponInstance.transform.localPosition = weaponData.localPositionOffset;
+        currentWeaponInstance.transform.localRotation = Quaternion.Euler(weaponData.localRotationOffset);
     }
 
     /// <summary>
