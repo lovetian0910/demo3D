@@ -1,5 +1,14 @@
 using UnityEngine;
 
+/// <summary>
+/// 🎓 Bool vs Trigger 驱动动画：
+/// - Bool（SetBool）：每帧持续设置，适合持续状态（跑步中 Speed > 0）
+/// - Trigger（SetTrigger）：只触发一次，自动重置，适合瞬发动作（攻击、跳跃）
+///
+/// 跳跃之前用 Bool 会出问题：如果 Animator 有 Any State → Jump 过渡，
+/// Bool 为 true 期间每帧都会重新进入 Jump 状态，导致动画反复重播。
+/// 改为 Trigger 后只触发一次，动画播完自然过渡回 Idle/Run。
+/// </summary>
 public class PlayerAnimator : MonoBehaviour
 {
     private Animator animator;
@@ -7,7 +16,7 @@ public class PlayerAnimator : MonoBehaviour
 
     // Animator 参数名缓存为 hash，避免字符串比较开销
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
-    private static readonly int IsJumpingHash = Animator.StringToHash("IsJumping");
+    private static readonly int JumpHash = Animator.StringToHash("Jump");
     private static readonly int LightAttackHash = Animator.StringToHash("LightAttack");
     private static readonly int HeavyAttackHash = Animator.StringToHash("HeavyAttack");
     private static readonly int HitHash = Animator.StringToHash("Hit");
@@ -23,10 +32,17 @@ public class PlayerAnimator : MonoBehaviour
     {
         float speed = playerController.IsMoving ? 1f : 0f;
         animator.SetFloat(SpeedHash, speed);
-        animator.SetBool(IsJumpingHash, playerController.IsJumping);
+        // 🎓 跳跃不再在这里每帧设置，改为 PlayJump() 单次触发
     }
 
-    // 供 PlayerCombat 调用
+    /// <summary>
+    /// 供 PlayerController 在起跳瞬间调用一次。
+    /// </summary>
+    public void PlayJump()
+    {
+        animator.SetTrigger(JumpHash);
+    }
+
     public void PlayLightAttack()
     {
         animator.SetTrigger(LightAttackHash);
@@ -37,7 +53,6 @@ public class PlayerAnimator : MonoBehaviour
         animator.SetTrigger(HeavyAttackHash);
     }
 
-    // 供 PlayerHealth 调用
     public void PlayHit()
     {
         animator.SetTrigger(HitHash);

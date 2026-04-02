@@ -34,9 +34,10 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private bool isMoving;
     private bool isJumping;
-    private float coyoteTimer;      // 离地后的宽容计时
-    private float jumpBufferTimer;  // 按键后的缓冲计时
+    private float coyoteTimer;
+    private float jumpBufferTimer;
     private PlayerHealth playerHealth;
+    private PlayerAnimator playerAnimator;
 
     public bool IsRolling => false;
     public bool IsMoving => isMoving;
@@ -47,6 +48,7 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         playerHealth = GetComponent<PlayerHealth>();
+        playerAnimator = GetComponent<PlayerAnimator>();
     }
 
     private void Update()
@@ -126,6 +128,7 @@ public class PlayerController : MonoBehaviour
         {
             velocity.y = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(gravity));
             isJumping = true;
+            playerAnimator.PlayJump(); // 🎓 起跳瞬间触发一次动画
             coyoteTimer = 0f;      // 用掉 coyote time，防止空中二段跳
             jumpBufferTimer = 0f;   // 消耗掉缓冲输入
         }
