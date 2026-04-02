@@ -6,6 +6,7 @@ public enum EnemyState
     Idle,
     Chase,
     Attack,
+    Hit,
     Dead
 }
 
@@ -18,6 +19,17 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     [SerializeField] protected float attackRange = 2f;
     [SerializeField] protected float attackCooldown = 1.5f;
 
+    [Header("Attack Timing")]
+    [Tooltip("攻击动画开始后多久执行伤害判定（对应挥刀帧）")]
+    [SerializeField] protected float attackHitDelay = 0.4f;
+
+    [Tooltip("攻击动画总时长（伤害判定后还要等动画播完才能下一次行动）")]
+    [SerializeField] protected float attackAnimDuration = 0.8f;
+
+    [Header("Hit Stun")]
+    [Tooltip("受击硬直时长（秒），期间无法行动")]
+    [SerializeField] private float hitStunDuration = 0.4f;
+
     [Header("Hit Feedback")]
     [SerializeField] private float flashDuration = 0.1f;
     [SerializeField] private Color flashColor = Color.white;
@@ -25,14 +37,28 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     [Header("Death")]
     [SerializeField] private GameObject deathEffectPrefab;
 
+    [Tooltip("死亡动画播放时长，播完后才销毁")]
+    [SerializeField] private float deathAnimDuration = 1.5f;
+
     protected float currentHealth;
     protected EnemyState currentState = EnemyState.Idle;
     protected NavMeshAgent agent;
     protected Transform playerTransform;
+    protected Animator animator;
+
     protected float attackTimer;
+    private float attackPhaseTimer;
+    private bool attackHitDone;
+    private float hitStunTimer;
+
     private Renderer[] renderers;
-    private Color[] originalColors;
+    private Material[] cachedMaterials;
     private bool isDead;
+
+    private static readonly int SpeedHash = Animator.StringToHash("Speed");
+    private static readonly int AttackHash = Animator.StringToHash("Attack");
+    private static readonly int HitHash = Animator.StringToHash("Hit");
+    private static readonly int DieHash = Animator.StringToHash("Die");
 
     public bool IsDead => isDead;
     public float HealthPercent => currentHealth / maxHealth;
@@ -42,15 +68,18 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         agent = GetComponent<NavMeshAgent>();
         agent.speed = moveSpeed;
         currentHealth = maxHealth;
+        animator = GetComponentInChildren<Animator>();
 
         renderers = GetComponentsInChildren<Renderer>();
-        originalColors = new Color[renderers.Length];
+        cachedMaterials = new Material[renderers.Length];
         for (int i = 0; i < renderers.Length; i++)
         {
-            if (renderers[i].material.HasProperty("_BaseColor"))
-                originalColors[i] = renderers[i].material.GetColor("_BaseColor");
-            else if (renderers[i].material.HasProperty("_Color"))
-                originalColors[i] = renderers[i].material.color;
+            cachedMaterials[i] = renderers[i].material;
+            if (cachedMaterials[i].HasProperty("_EmissionColor"))
+            {
+                cachedMaterials[i].EnableKeyword("_EMISSION");
+                cachedMaterials[i].SetColor("_EmissionColor", Color.black);
+            }
         }
     }
 
@@ -73,39 +102,53 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         switch (currentState)
         {
             case EnemyState.Idle:
-                if (distToPlayer <= detectionRange)
-                {
-                    currentState = EnemyState.Chase;
-                }
+                UpdateIdle(distToPlayer);
                 break;
 
             case EnemyState.Chase:
-                ChasePlayer(distToPlayer);
+                UpdateChase(distToPlayer);
                 break;
 
             case EnemyState.Attack:
-                AttackUpdate(distToPlayer);
+                UpdateAttack(distToPlayer);
                 break;
+
+            case EnemyState.Hit:
+                UpdateHit();
+                break;
+        }
+
+        if (animator != null)
+        {
+            animator.SetFloat(SpeedHash, agent.velocity.magnitude);
         }
     }
 
-    private void ChasePlayer(float distance)
+    private void UpdateIdle(float distToPlayer)
+    {
+        if (distToPlayer <= detectionRange)
+        {
+            currentState = EnemyState.Chase;
+        }
+    }
+
+    private void UpdateChase(float distToPlayer)
     {
         agent.SetDestination(playerTransform.position);
 
-        if (distance <= attackRange)
+        if (distToPlayer <= attackRange && attackTimer <= 0f)
         {
             agent.ResetPath();
-            currentState = EnemyState.Attack;
+            StartAttack();
         }
-        else if (distance > detectionRange * 1.5f)
+        else if (distToPlayer > detectionRange * 1.5f)
         {
             agent.ResetPath();
             currentState = EnemyState.Idle;
         }
     }
 
-    private void AttackUpdate(float distance)
+    private void UpdateAttack(float distToPlayer)
     {
         Vector3 lookDir = (playerTransform.position - transform.position).normalized;
         lookDir.y = 0;
@@ -114,16 +157,72 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
             transform.rotation = Quaternion.LookRotation(lookDir);
         }
 
-        if (distance > attackRange * 1.3f)
-        {
-            currentState = EnemyState.Chase;
-            return;
-        }
+        attackPhaseTimer -= Time.deltaTime;
 
-        if (attackTimer <= 0f)
+        if (!attackHitDone && attackPhaseTimer <= 0f)
         {
             PerformAttack();
+            attackHitDone = true;
+            attackPhaseTimer = attackAnimDuration - attackHitDelay;
+        }
+        else if (attackHitDone && attackPhaseTimer <= 0f)
+        {
             attackTimer = attackCooldown;
+
+            if (distToPlayer > detectionRange * 1.5f)
+            {
+                currentState = EnemyState.Idle;
+            }
+            else
+            {
+                currentState = EnemyState.Chase;
+            }
+        }
+    }
+
+    private void UpdateHit()
+    {
+        hitStunTimer -= Time.deltaTime;
+
+        if (hitStunTimer <= 0f)
+        {
+            float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+            if (distToPlayer <= detectionRange)
+            {
+                currentState = EnemyState.Chase;
+                agent.isStopped = false;
+            }
+            else
+            {
+                currentState = EnemyState.Idle;
+                agent.isStopped = false;
+            }
+        }
+    }
+
+    private void StartAttack()
+    {
+        currentState = EnemyState.Attack;
+        attackPhaseTimer = attackHitDelay;
+        attackHitDone = false;
+
+        if (animator != null)
+        {
+            animator.SetTrigger(AttackHash);
+        }
+    }
+
+    private void EnterHitState()
+    {
+        currentState = EnemyState.Hit;
+        hitStunTimer = hitStunDuration;
+
+        agent.ResetPath();
+        agent.isStopped = true;
+
+        if (animator != null)
+        {
+            animator.SetTrigger(HitHash);
         }
     }
 
@@ -134,6 +233,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         if (isDead) return;
 
         currentHealth -= damage;
+        Debug.Log($">>> 敌人受伤! 伤害: {damage}, 剩余血量: {currentHealth}/{maxHealth}");
         StartCoroutine(FlashCoroutine());
 
         if (currentHealth <= 0f)
@@ -141,26 +241,9 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
             currentHealth = 0f;
             Die();
         }
-    }
-
-    private System.Collections.IEnumerator FlashCoroutine()
-    {
-        foreach (var r in renderers)
+        else
         {
-            if (r.material.HasProperty("_BaseColor"))
-                r.material.SetColor("_BaseColor", flashColor);
-            else if (r.material.HasProperty("_Color"))
-                r.material.color = flashColor;
-        }
-
-        yield return new WaitForSeconds(flashDuration);
-
-        for (int i = 0; i < renderers.Length; i++)
-        {
-            if (renderers[i].material.HasProperty("_BaseColor"))
-                renderers[i].material.SetColor("_BaseColor", originalColors[i]);
-            else if (renderers[i].material.HasProperty("_Color"))
-                renderers[i].material.color = originalColors[i];
+            EnterHitState();
         }
     }
 
@@ -168,13 +251,42 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     {
         isDead = true;
         currentState = EnemyState.Dead;
+
         agent.enabled = false;
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+
+        if (animator != null)
+        {
+            animator.SetTrigger(DieHash);
+        }
 
         if (deathEffectPrefab != null)
         {
             Instantiate(deathEffectPrefab, transform.position + Vector3.up, Quaternion.identity);
         }
 
-        Destroy(gameObject, 1f);
+        Destroy(gameObject, deathAnimDuration);
+    }
+
+    private System.Collections.IEnumerator FlashCoroutine()
+    {
+        for (int i = 0; i < cachedMaterials.Length; i++)
+        {
+            if (cachedMaterials[i].HasProperty("_EmissionColor"))
+            {
+                cachedMaterials[i].SetColor("_EmissionColor", flashColor * 3f);
+            }
+        }
+
+        yield return new WaitForSeconds(flashDuration);
+
+        for (int i = 0; i < cachedMaterials.Length; i++)
+        {
+            if (cachedMaterials[i].HasProperty("_EmissionColor"))
+            {
+                cachedMaterials[i].SetColor("_EmissionColor", Color.black);
+            }
+        }
     }
 }
