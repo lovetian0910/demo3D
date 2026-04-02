@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpHeight = 1.5f;
 
     [Header("Fall Death")]
-    [SerializeField] private float fallDeathY = -20f; // 低于这个高度判定坠落死亡
+    [SerializeField] private float fallDeathY = -20f;
 
     private CharacterController controller;
     private Vector3 velocity;
@@ -20,7 +20,7 @@ public class PlayerController : MonoBehaviour
     private PlayerHealth playerHealth;
 
     // 供其他脚本查询状态
-    public bool IsRolling => false; // 保留接口兼容，不再翻滚
+    public bool IsRolling => false;
     public bool IsMoving => isMoving;
     public bool IsJumping => isJumping;
     public bool IsGrounded => controller.isGrounded;
@@ -35,7 +35,6 @@ public class PlayerController : MonoBehaviour
     {
         if (playerHealth != null && playerHealth.IsDead) return;
 
-        // 坠落死亡检测
         if (transform.position.y < fallDeathY)
         {
             if (playerHealth != null && !playerHealth.IsDead)
@@ -79,16 +78,18 @@ public class PlayerController : MonoBehaviour
 
     private void HandleJumpInput()
     {
-        // 只有在地面上才能跳
-        if (Input.GetKeyDown(KeyCode.Space) && controller.isGrounded)
+        // 🎓 跳跃条件：在地面上 + 不在跳跃中
+        // 去掉了 CD，只要落地了（isJumping == false）就能立刻再跳。
+        // 用 isJumping 标志而不是 CD 计时器来防止连跳，
+        // 因为跳跃的限制应该是"还没落地"，而不是"冷却没好"。
+        if (Input.GetKeyDown(KeyCode.Space) && controller.isGrounded && !isJumping)
         {
-            // 物理公式: v = sqrt(2 * g * h)
-            // 要跳到 jumpHeight 高度，需要的初速度
             velocity.y = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(gravity));
             isJumping = true;
         }
 
-        // 落地后重置跳跃状态
+        // 🎓 落地检测：velocity.y <= 0 确保是在下落阶段才判定落地
+        // 避免刚按跳跃时（还在地面但 velocity.y > 0）就立刻判定为落地
         if (isJumping && controller.isGrounded && velocity.y <= 0f)
         {
             isJumping = false;
@@ -99,7 +100,7 @@ public class PlayerController : MonoBehaviour
     {
         if (controller.isGrounded && velocity.y < 0f)
         {
-            velocity.y = -2f; // 保持小的向下力确保 isGrounded 判定
+            velocity.y = -2f;
         }
 
         velocity.y += gravity * Time.deltaTime;
