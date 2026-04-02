@@ -1,5 +1,16 @@
 using UnityEngine;
 
+/// <summary>
+/// 🎓 CharacterController.isGrounded 的坑：
+/// isGrounded 只在上一帧 Move() 有向下接触地面时才为 true。
+/// 跑步经过不平地面时，某些帧会短暂"悬空"导致 isGrounded = false，
+/// 这一帧按空格就跳不起来——玩家觉得"吞输入"了。
+///
+/// 解决方案：Coyote Time（土狼时间）+ Input Buffer（输入缓冲）
+/// - Coyote Time：离地后 0.15 秒内仍可跳跃
+/// - Input Buffer：按空格后 0.15 秒内如果落地，自动执行跳跃
+/// 两者配合可以大幅提升操控手感。大部分动作/平台游戏都有这两个机制。
+/// </summary>
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
@@ -10,6 +21,12 @@ public class PlayerController : MonoBehaviour
     [Header("Jump")]
     [SerializeField] private float jumpHeight = 1.5f;
 
+    [Tooltip("离开地面后仍可跳跃的宽容时间（秒）")]
+    [SerializeField] private float coyoteTime = 0.15f;
+
+    [Tooltip("按下跳跃后的输入缓冲时间（秒）")]
+    [SerializeField] private float jumpBufferTime = 0.15f;
+
     [Header("Fall Death")]
     [SerializeField] private float fallDeathY = -20f;
 
@@ -17,9 +34,10 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private bool isMoving;
     private bool isJumping;
+    private float coyoteTimer;      // 离地后的宽容计时
+    private float jumpBufferTimer;  // 按键后的缓冲计时
     private PlayerHealth playerHealth;
 
-    // 供其他脚本查询状态
     public bool IsRolling => false;
     public bool IsMoving => isMoving;
     public bool IsJumping => isJumping;
@@ -45,7 +63,7 @@ public class PlayerController : MonoBehaviour
         }
 
         HandleMovement();
-        HandleJumpInput();
+        HandleJump();
         ApplyGravity();
     }
 
@@ -76,20 +94,43 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleJumpInput()
+    private void HandleJump()
     {
-        // 🎓 跳跃条件：在地面上 + 不在跳跃中
-        // 去掉了 CD，只要落地了（isJumping == false）就能立刻再跳。
-        // 用 isJumping 标志而不是 CD 计时器来防止连跳，
-        // 因为跳跃的限制应该是"还没落地"，而不是"冷却没好"。
-        if (Input.GetKeyDown(KeyCode.Space) && controller.isGrounded && !isJumping)
+        // ---- Coyote Time 计时 ----
+        // 🎓 在地面上时持续重置计时器；离地后计时器开始倒计。
+        // 只要计时器 > 0 就视为"可以跳"。
+        if (controller.isGrounded && !isJumping)
+        {
+            coyoteTimer = coyoteTime;
+        }
+        else
+        {
+            coyoteTimer -= Time.deltaTime;
+        }
+
+        // ---- Input Buffer 计时 ----
+        // 🎓 按下空格时记录，之后每帧递减。
+        // 如果在缓冲时间内落地，自动触发跳跃——不"吞"玩家的输入。
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            jumpBufferTimer = jumpBufferTime;
+        }
+        else
+        {
+            jumpBufferTimer -= Time.deltaTime;
+        }
+
+        // ---- 执行跳跃 ----
+        // 条件：有缓冲的跳跃输入 + 在土狼时间内（视为在地面）+ 不在跳跃中
+        if (jumpBufferTimer > 0f && coyoteTimer > 0f && !isJumping)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * 2f * Mathf.Abs(gravity));
             isJumping = true;
+            coyoteTimer = 0f;      // 用掉 coyote time，防止空中二段跳
+            jumpBufferTimer = 0f;   // 消耗掉缓冲输入
         }
 
-        // 🎓 落地检测：velocity.y <= 0 确保是在下落阶段才判定落地
-        // 避免刚按跳跃时（还在地面但 velocity.y > 0）就立刻判定为落地
+        // ---- 落地重置 ----
         if (isJumping && controller.isGrounded && velocity.y <= 0f)
         {
             isJumping = false;
