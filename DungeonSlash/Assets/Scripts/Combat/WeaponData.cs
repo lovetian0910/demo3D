@@ -49,12 +49,19 @@ public class WeaponData : ScriptableObject
     [Tooltip("重攻击：碰撞体保持激活多久")]
     public float heavyHitDuration = 0.25f;
 
-    [Header("挂载偏移")]
-    [Tooltip("武器挂到手骨后的旋转修正（欧拉角）。如果武器朝向不对，调整这里")]
+    [Header("挂载偏移 - 右手")]
+    [Tooltip("右手武器旋转修正（欧拉角）")]
     public Vector3 localRotationOffset = new Vector3(0f, 0f, 180f);
 
-    [Tooltip("武器挂到手骨后的位置修正。通常不需要改")]
+    [Tooltip("右手武器位置修正")]
     public Vector3 localPositionOffset = new Vector3(-0.1f, 0.1f, 0f);
+
+    [Header("挂载偏移 - 左手")]
+    [Tooltip("左手武器旋转修正（欧拉角）。左右手骨骼是镜像的，通常需要不同的值")]
+    public Vector3 leftRotationOffset = new Vector3(0f, 0f, 0f);
+
+    [Tooltip("左手武器位置修正")]
+    public Vector3 leftPositionOffset = new Vector3(0.1f, 0.1f, 0f);
 
     [Header("碰撞体设置")]
     [Tooltip("武器 BoxCollider 的中心偏移（相对于武器模型本地坐标）")]

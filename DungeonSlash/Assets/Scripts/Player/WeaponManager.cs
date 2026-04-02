@@ -88,12 +88,14 @@ public class WeaponManager : MonoBehaviour
         {
             if (rightWeaponInstance != null)
             {
-                ApplyWeaponTransform(rightWeaponInstance, CurrentWeaponData);
+                rightWeaponInstance.transform.localPosition = CurrentWeaponData.localPositionOffset;
+                rightWeaponInstance.transform.localRotation = Quaternion.Euler(CurrentWeaponData.localRotationOffset);
                 UpdateColliderPreview(rightWeaponCollider, CurrentWeaponData);
             }
             if (leftWeaponInstance != null)
             {
-                ApplyWeaponTransform(leftWeaponInstance, CurrentWeaponData);
+                leftWeaponInstance.transform.localPosition = CurrentWeaponData.leftPositionOffset;
+                leftWeaponInstance.transform.localRotation = Quaternion.Euler(CurrentWeaponData.leftRotationOffset);
                 UpdateColliderPreview(leftWeaponCollider, CurrentWeaponData);
             }
         }
@@ -125,12 +127,15 @@ public class WeaponManager : MonoBehaviour
         if (leftWeaponInstance != null) Destroy(leftWeaponInstance);
 
         // ---- 右手武器（重攻击用） ----
-        rightWeaponInstance = SpawnWeapon(weaponData, rightHandBone);
+        rightWeaponInstance = SpawnWeapon(weaponData, rightHandBone,
+            weaponData.localPositionOffset, weaponData.localRotationOffset);
         rightWeaponCollider = SetupWeaponCollider(rightWeaponInstance, weaponData);
         SetupWeaponHitbox(rightWeaponInstance);
 
         // ---- 左手武器（轻攻击用） ----
-        leftWeaponInstance = SpawnWeapon(weaponData, leftHandBone);
+        // 🎓 左右手骨骼是镜像的，本地坐标轴方向相反，所以需要单独的偏移值
+        leftWeaponInstance = SpawnWeapon(weaponData, leftHandBone,
+            weaponData.leftPositionOffset, weaponData.leftRotationOffset);
         leftWeaponCollider = SetupWeaponCollider(leftWeaponInstance, weaponData);
         SetupWeaponHitbox(leftWeaponInstance);
 
@@ -148,12 +153,14 @@ public class WeaponManager : MonoBehaviour
     /// 所以左右手各 Instantiate 一次，得到两个独立的武器 GameObject，
     /// 各自有自己的碰撞体，互不干扰。
     /// </summary>
-    private GameObject SpawnWeapon(WeaponData weaponData, Transform handBone)
+    private GameObject SpawnWeapon(WeaponData weaponData, Transform handBone,
+        Vector3 posOffset, Vector3 rotOffset)
     {
         GameObject instance = Instantiate(weaponData.prefab);
         instance.name = $"{weaponData.weaponName}_{handBone.name}";
         instance.transform.SetParent(handBone, worldPositionStays: false);
-        ApplyWeaponTransform(instance, weaponData);
+        instance.transform.localPosition = posOffset;
+        instance.transform.localRotation = Quaternion.Euler(rotOffset);
         return instance;
     }
 
@@ -195,15 +202,6 @@ public class WeaponManager : MonoBehaviour
         }
         rb.isKinematic = true;
         rb.useGravity = false;
-    }
-
-    /// <summary>
-    /// 应用 WeaponData 中配置的旋转和位置偏移。
-    /// </summary>
-    private void ApplyWeaponTransform(GameObject weaponInstance, WeaponData weaponData)
-    {
-        weaponInstance.transform.localPosition = weaponData.localPositionOffset;
-        weaponInstance.transform.localRotation = Quaternion.Euler(weaponData.localRotationOffset);
     }
 
     /// <summary>
