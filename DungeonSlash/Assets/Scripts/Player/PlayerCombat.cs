@@ -9,6 +9,10 @@ using UnityEngine;
 /// </summary>
 public class PlayerCombat : MonoBehaviour
 {
+    [Header("Attack Assist")]
+    [Tooltip("攻击时自动面向范围内最近敌人的搜索半径。设为 0 关闭此功能")]
+    [SerializeField] private float autoAimRadius = 5f;
+
     private WeaponData currentWeaponData;
     private Collider leftWeaponCollider;
     private Collider rightWeaponCollider;
@@ -102,6 +106,7 @@ public class PlayerCombat : MonoBehaviour
         currentHitDuration = currentWeaponData.lightHitDuration;
         hitActive = false;
         activeCollider = leftWeaponCollider;
+        AutoAimToNearestEnemy();
         playerState.EnterAttacking();
         playerAnimator.PlayLightAttack();
     }
@@ -115,8 +120,56 @@ public class PlayerCombat : MonoBehaviour
         currentHitDuration = currentWeaponData.heavyHitDuration;
         hitActive = false;
         activeCollider = rightWeaponCollider;
+        AutoAimToNearestEnemy();
         playerState.EnterAttacking();
         playerAnimator.PlayHeavyAttack();
+    }
+
+    /// <summary>
+    /// 攻击瞬间自动面向最近的敌人。
+    ///
+    /// 🎓 攻击辅助瞄准（Attack Assist / Auto-Aim）：
+    /// 俯视角动作游戏中，玩家按攻击时角色朝向可能不对准敌人，
+    /// 导致砍空。自动面向最近敌人能大幅提升手感。
+    /// 几乎所有动作游戏都有这个机制（暗黑破坏神、原神、塞尔达）。
+    ///
+    /// 用 Physics.OverlapSphere 在范围内搜索所有 Enemy tag 物体，
+    /// 找到最近的那个，立刻转向它。
+    /// </summary>
+    private void AutoAimToNearestEnemy()
+    {
+        if (autoAimRadius <= 0f) return;
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, autoAimRadius);
+        float closestDist = float.MaxValue;
+        Transform closestEnemy = null;
+
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("Enemy"))
+            {
+                // 跳过已死亡的敌人
+                IDamageable damageable = hit.GetComponentInParent<IDamageable>();
+                if (damageable != null && damageable.IsDead) continue;
+
+                float dist = Vector3.Distance(transform.position, hit.transform.position);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    closestEnemy = hit.transform;
+                }
+            }
+        }
+
+        if (closestEnemy != null)
+        {
+            Vector3 dir = (closestEnemy.position - transform.position).normalized;
+            dir.y = 0;
+            if (dir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(dir);
+            }
+        }
     }
 
     /// <summary>
