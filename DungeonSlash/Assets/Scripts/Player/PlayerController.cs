@@ -32,6 +32,8 @@ public class PlayerController : MonoBehaviour
     private PlayerAnimator playerAnimator;
     private PlayerState playerState;
 
+    public bool InputEnabled = true;
+
     public bool IsRolling => false;
     public bool IsMoving => isMoving;
     public bool IsJumping => isJumping;
@@ -52,9 +54,13 @@ public class PlayerController : MonoBehaviour
         if (transform.position.y < fallDeathY)
         {
             if (playerHealth != null && !playerHealth.IsDead)
-            {
                 playerHealth.TakeDamage(9999f, Vector3.zero);
-            }
+            return;
+        }
+
+        if (!InputEnabled)
+        {
+            ApplyGravity();
             return;
         }
 
