@@ -67,5 +67,8 @@ DungeonSlash/web_test/
 # Unity 自动生成的遮挡剔除数据（可在编辑器中重新 Bake）
 **/OcclusionCullingData.asset
 
+# Claude Code 本地配置
+.claude/settings.local.json
+
 # TextMesh Pro（可通过 Package Manager 安装）
 # DungeonSlash/Assets/TextMesh Pro/
