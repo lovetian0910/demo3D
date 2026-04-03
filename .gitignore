@@ -1,0 +1,71 @@
+# =============================================
+# Unity .gitignore
+# =============================================
+
+# Unity 自动生成的缓存目录（最大，4.5GB+）
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+
+# IDE / 编辑器生成
+.vscode/
+.vs/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity 崩溃日志
+sysinfo.txt
+mono_crash*.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =============================================
+# 第三方资源包（太大，不适合 Git）
+# 使用者需自行导入：
+#   - Little Heroes Mega Pack v1.8.1
+#   - PolygonDungeonRealms
+# =============================================
+DungeonSlash/Assets/ThirdParty/Little Heroes Mega Pack/
+DungeonSlash/Assets/ThirdParty/PolygonDungeonRealms/
+
+# 保留 .meta 文件（维持 GUID 引用关系）
+# !DungeonSlash/Assets/ThirdParty/*.meta  -- 默认已保留
+
+# =============================================
+# 根目录的素材文件（下载的原始资源，不需要上传）
+# =============================================
+4009_低面风地牢地下城.rar
+4009_低面风地牢地下城/
+UNT-0288/
+豪礼1_80套Unity卡通风格场景模型/
+
+# WebGL 构建产物
+DungeonSlash/web_test/
+
+# Unity 构建产物
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Unity 自动生成的遮挡剔除数据（可在编辑器中重新 Bake）
+**/OcclusionCullingData.asset
+
+# TextMesh Pro（可通过 Package Manager 安装）
+# DungeonSlash/Assets/TextMesh Pro/
