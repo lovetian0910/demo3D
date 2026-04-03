@@ -156,11 +156,16 @@ public class CutsceneManager : MonoBehaviour
             cutsceneCamera.Follow  = speakerGO.transform;
             cutsceneCamera.LookAt  = speakerGO.transform;
 
-            // 🎓 Face the speaker toward the camera so we get a front-facing close-up.
-            // We pick a fixed "cinematic forward" direction (e.g. -Z world) so every
-            // character faces the same way during dialogue, regardless of where they
-            // were standing when the cutscene started.
-            speakerGO.transform.rotation = Quaternion.LookRotation(Vector3.back);
+            // 🎓 Face the speaker toward where the CutsceneCamera will be.
+            // Follow Offset (0, 1.5, 2) means the camera sits 2 units in front
+            // of the character in world +Z. We want the character to face -Z (toward
+            // the camera), so we apply the inverse of the offset's XZ direction.
+            // This is calculated directly without waiting for Cinemachine to update.
+            Vector3 camOffset = new Vector3(0f, 0f, 2f); // must match Follow Offset Z
+            Vector3 toCameraDir = -camOffset;
+            toCameraDir.y = 0f;
+            if (toCameraDir != Vector3.zero)
+                speakerGO.transform.rotation = Quaternion.LookRotation(toCameraDir);
         }
 
         // Play animation on speaker
