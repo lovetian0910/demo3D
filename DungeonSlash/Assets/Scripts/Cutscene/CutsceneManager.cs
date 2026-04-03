@@ -155,6 +155,12 @@ public class CutsceneManager : MonoBehaviour
         {
             cutsceneCamera.Follow  = speakerGO.transform;
             cutsceneCamera.LookAt  = speakerGO.transform;
+
+            // 🎓 Face the speaker toward the camera so we get a front-facing close-up.
+            // We pick a fixed "cinematic forward" direction (e.g. -Z world) so every
+            // character faces the same way during dialogue, regardless of where they
+            // were standing when the cutscene started.
+            speakerGO.transform.rotation = Quaternion.LookRotation(Vector3.back);
         }
 
         // Play animation on speaker
