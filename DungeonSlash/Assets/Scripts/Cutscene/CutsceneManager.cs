@@ -30,12 +30,11 @@ public class CutsceneManager : MonoBehaviour
     // Resolved at runtime
     private PlayerController playerController;
     private PlayerAnimator playerAnimator;
-    private List<EnemyBase> enemies = new();
+    private readonly Dictionary<string, GameObject> speakerMap = new();
 
     private List<DialogueLine> lines = new();
     private int currentLineIndex = -1;
     private bool waitingForClick = false;
-    private bool cutsceneActive = false;
 
     private void Awake()
     {
@@ -45,6 +44,13 @@ public class CutsceneManager : MonoBehaviour
 
     private void Start()
     {
+        if (dialogueUI == null || cutsceneCamera == null || followCamera == null)
+        {
+            Debug.LogError("[CutsceneManager] Required references not set in Inspector. Disabling.");
+            enabled = false;
+            return;
+        }
+
         // Find player components
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
@@ -53,9 +59,10 @@ public class CutsceneManager : MonoBehaviour
             playerAnimator   = player.GetComponent<PlayerAnimator>();
         }
 
-        // Find all enemies
-        foreach (var e in FindObjectsByType<EnemyBase>(FindObjectsSortMode.None))
-            enemies.Add(e);
+        // Build stable speaker map for enemies
+        EnemyBase[] foundEnemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
+        for (int i = 0; i < foundEnemies.Length; i++)
+            speakerMap[$"enemy_{i}"] = foundEnemies[i].gameObject;
 
         StartCoroutine(LoadAndPlay());
     }
@@ -99,13 +106,15 @@ public class CutsceneManager : MonoBehaviour
 
     private void BeginCutscene()
     {
-        cutsceneActive = true;
-
         // Freeze player input
         if (playerController != null) playerController.InputEnabled = false;
 
         // Freeze all enemy AI
-        foreach (var e in enemies) e.AIEnabled = false;
+        foreach (var kvp in speakerMap)
+        {
+            var eb = kvp.Value.GetComponent<EnemyBase>();
+            if (eb != null) eb.AIEnabled = false;
+        }
 
         // Activate cutscene camera
         cutsceneCamera.Priority = 10;
@@ -157,14 +166,17 @@ public class CutsceneManager : MonoBehaviour
 
     private void EndCutscene()
     {
-        cutsceneActive = false;
         waitingForClick = false;
 
         // Restore player input
         if (playerController != null) playerController.InputEnabled = true;
 
         // Restore enemy AI
-        foreach (var e in enemies) e.AIEnabled = true;
+        foreach (var kvp in speakerMap)
+        {
+            var eb = kvp.Value.GetComponent<EnemyBase>();
+            if (eb != null) eb.AIEnabled = true;
+        }
 
         // Return camera to follow view
         cutsceneCamera.Priority = 0;
@@ -182,16 +194,10 @@ public class CutsceneManager : MonoBehaviour
     private GameObject ResolveSpeaker(string speaker)
     {
         if (speaker == "player")
-            return GameObject.FindGameObjectWithTag("Player");
+            return playerController != null ? playerController.gameObject : null;
 
-        if (speaker.StartsWith("enemy_"))
-        {
-            if (int.TryParse(speaker.Substring(6), out int idx))
-            {
-                GameObject[] enemyGOs = GameObject.FindGameObjectsWithTag("Enemy");
-                if (idx < enemyGOs.Length) return enemyGOs[idx];
-            }
-        }
+        if (speakerMap.TryGetValue(speaker, out GameObject mapped))
+            return mapped;
 
         Debug.LogWarning($"[CutsceneManager] Unknown speaker '{speaker}'");
         return null;
