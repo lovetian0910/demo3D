@@ -161,8 +161,9 @@ public class CutsceneManager : MonoBehaviour
             // of the character in world +Z. We want the character to face -Z (toward
             // the camera), so we apply the inverse of the offset's XZ direction.
             // This is calculated directly without waiting for Cinemachine to update.
+            // Camera is at +Z offset from character, so character must face +Z toward camera
             Vector3 camOffset = new Vector3(0f, 0f, 2f); // must match Follow Offset Z
-            Vector3 toCameraDir = -camOffset;
+            Vector3 toCameraDir = camOffset;
             toCameraDir.y = 0f;
             if (toCameraDir != Vector3.zero)
                 speakerGO.transform.rotation = Quaternion.LookRotation(toCameraDir);
