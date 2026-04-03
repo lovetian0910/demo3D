@@ -186,9 +186,9 @@ public class CutsceneManager : MonoBehaviour
     private void EndCutscene()
     {
         waitingForClick = false;
+        StartCoroutine(RestoreInputNextFrame());
 
-        // Restore player input
-        if (playerController != null) playerController.InputEnabled = true;
+        // Restore enemy AI
 
         // Restore enemy AI
         foreach (var kvp in speakerMap)
@@ -206,6 +206,19 @@ public class CutsceneManager : MonoBehaviour
 
         // Return player to Idle
         if (playerAnimator != null) playerAnimator.PlayCutsceneAnim("Idle");
+    }
+
+    /// <summary>
+    /// 🎓 同帧问题（Same-frame Input Bug）：
+    /// EndCutscene 和 PlayerCombat.Update 都在同一帧执行。
+    /// 如果在同一帧里把 InputEnabled 改回 true，PlayerCombat 会立刻
+    /// 读到那次 GetMouseButtonDown(0)，触发攻击。
+    /// 延迟一帧恢复输入，让那次点击事件在下一帧前消耗掉。
+    /// </summary>
+    private IEnumerator RestoreInputNextFrame()
+    {
+        yield return null; // wait one frame
+        if (playerController != null) playerController.InputEnabled = true;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
