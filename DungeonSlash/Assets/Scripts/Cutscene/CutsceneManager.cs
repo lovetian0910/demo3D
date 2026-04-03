@@ -81,7 +81,14 @@ public class CutsceneManager : MonoBehaviour
 
     private IEnumerator LoadAndPlay()
     {
-        string path = Path.Combine(Application.streamingAssetsPath, jsonFileName);
+        // 🎓 On macOS/Windows Editor, streamingAssetsPath is a plain file path.
+        // UnityWebRequest needs an explicit file:// prefix to treat it as a local URL.
+        // On Android (jar://) and WebGL (http://), streamingAssetsPath already includes
+        // the correct protocol, so we only prepend file:// when it's missing.
+        string rawPath = Path.Combine(Application.streamingAssetsPath, jsonFileName);
+        string path = rawPath.StartsWith("http") || rawPath.StartsWith("jar:")
+            ? rawPath
+            : "file://" + rawPath;
         using var req = UnityWebRequest.Get(path);
         yield return req.SendWebRequest();
 
