@@ -62,4 +62,15 @@ public class PlayerAnimator : MonoBehaviour
     {
         animator.SetTrigger(DieHash);
     }
+
+    /// <summary>
+    /// 🎓 CrossFade vs SetTrigger:
+    /// CrossFade can jump directly to any named State by string, regardless of
+    /// Animator graph transitions. Ideal for data-driven cutscene animations where
+    /// the state name comes from JSON. Transition duration 0.2f blends smoothly.
+    /// </summary>
+    public void PlayCutsceneAnim(string stateName)
+    {
+        animator.CrossFade(stateName, 0.2f);
+    }
 }
