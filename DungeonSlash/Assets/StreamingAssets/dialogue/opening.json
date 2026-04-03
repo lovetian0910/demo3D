@@ -1,0 +1,8 @@
+{
+  "lines": [
+    { "speaker": "player",  "text": "Darkness has consumed the dungeon...",   "animation": "Relax"      },
+    { "speaker": "player",  "text": "I alone must descend into this abyss.",  "animation": "Nod Head"   },
+    { "speaker": "enemy_0", "text": "Another fool walks to their death.",     "animation": "Clapping"   },
+    { "speaker": "enemy_0", "text": "We will crush you.",                     "animation": "Shake Head" }
+  ]
+}
