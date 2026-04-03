@@ -54,6 +54,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     private Renderer[] renderers;
     private Material[] cachedMaterials;
     private bool isDead;
+    public bool AIEnabled = true;
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int AttackHash = Animator.StringToHash("Attack");
@@ -95,33 +96,25 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected virtual void Update()
     {
         if (isDead || playerTransform == null) return;
+        if (!AIEnabled)
+        {
+            agent.isStopped = true;
+            return;
+        }
 
         attackTimer -= Time.deltaTime;
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
 
         switch (currentState)
         {
-            case EnemyState.Idle:
-                UpdateIdle(distToPlayer);
-                break;
-
-            case EnemyState.Chase:
-                UpdateChase(distToPlayer);
-                break;
-
-            case EnemyState.Attack:
-                UpdateAttack(distToPlayer);
-                break;
-
-            case EnemyState.Hit:
-                UpdateHit();
-                break;
+            case EnemyState.Idle:   UpdateIdle(distToPlayer);   break;
+            case EnemyState.Chase:  UpdateChase(distToPlayer);  break;
+            case EnemyState.Attack: UpdateAttack(distToPlayer); break;
+            case EnemyState.Hit:    UpdateHit();                break;
         }
 
         if (animator != null)
-        {
             animator.SetFloat(SpeedHash, agent.velocity.magnitude);
-        }
     }
 
     private void UpdateIdle(float distToPlayer)
