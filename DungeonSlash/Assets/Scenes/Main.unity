@@ -20926,7 +20926,7 @@ MonoBehaviour:
       Size: {x: 0.8, y: 0.8}
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
-  TargetOffset: {x: 0, y: 0, z: 0}
+  TargetOffset: {x: 0, y: 0, z: -2}
   Damping: {x: 0.5, y: 0.5}
   Lookahead:
     Enabled: 0
@@ -20951,7 +20951,7 @@ MonoBehaviour:
     AngularDampingMode: 0
     RotationDamping: {x: 1, y: 1, z: 1}
     QuaternionDamping: 1
-  FollowOffset: {x: 0, y: 2.5, z: 1.5}
+  FollowOffset: {x: 0, y: 1.5, z: 1.5}
 --- !u!114 &1418160473
 MonoBehaviour:
   m_ObjectHideFlags: 0

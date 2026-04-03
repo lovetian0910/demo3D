@@ -20,6 +20,7 @@ public class PlayerCombat : MonoBehaviour
 
     private PlayerAnimator playerAnimator;
     private PlayerState playerState;
+    private PlayerController playerController;
     private float attackCooldownTimer;
     private float currentAttackDamage;
     private float currentHitDuration;
@@ -37,6 +38,7 @@ public class PlayerCombat : MonoBehaviour
     {
         playerAnimator = GetComponent<PlayerAnimator>();
         playerState = GetComponent<PlayerState>();
+        playerController = GetComponent<PlayerController>();
     }
 
     public void EquipWeapon(WeaponData data, Collider leftCollider, Collider rightCollider)
@@ -86,6 +88,9 @@ public class PlayerCombat : MonoBehaviour
 
         // 🎓 通过 PlayerState 统一检查是否可以攻击
         if (!playerState.CanAttack) return;
+
+        // 剧情演出时禁止攻击输入
+        if (playerController != null && !playerController.InputEnabled) return;
 
         if (Input.GetMouseButtonDown(0) && attackCooldownTimer <= 0f)
         {
