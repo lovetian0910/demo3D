@@ -32,7 +32,12 @@ public class PlayerController : MonoBehaviour
     private PlayerAnimator playerAnimator;
     private PlayerState playerState;
 
-    public bool InputEnabled = true;
+    private bool _inputEnabled = true;
+    public bool InputEnabled
+    {
+        get => _inputEnabled;
+        set => _inputEnabled = value;
+    }
 
     public bool IsRolling => false;
     public bool IsMoving => isMoving;
@@ -58,7 +63,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (!InputEnabled)
+        if (!_inputEnabled)
         {
             ApplyGravity();
             return;

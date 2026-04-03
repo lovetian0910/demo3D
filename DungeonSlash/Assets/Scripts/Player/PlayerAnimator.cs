@@ -71,6 +71,11 @@ public class PlayerAnimator : MonoBehaviour
     /// </summary>
     public void PlayCutsceneAnim(string stateName)
     {
-        animator.CrossFade(stateName, 0.2f);
+        if (string.IsNullOrEmpty(stateName))
+        {
+            Debug.LogWarning("[PlayerAnimator] PlayCutsceneAnim: stateName is null or empty.");
+            return;
+        }
+        animator.CrossFade(stateName, 0.2f, 0); // layer 0
     }
 }

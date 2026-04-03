@@ -54,7 +54,25 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     private Renderer[] renderers;
     private Material[] cachedMaterials;
     private bool isDead;
-    public bool AIEnabled = true;
+    private bool _aiEnabled = true;
+    public bool AIEnabled
+    {
+        get => _aiEnabled;
+        set
+        {
+            _aiEnabled = value;
+            if (!value)
+            {
+                agent.ResetPath();
+                agent.isStopped = true;
+                currentState = EnemyState.Idle;
+            }
+            else
+            {
+                agent.isStopped = false;
+            }
+        }
+    }
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int AttackHash = Animator.StringToHash("Attack");
@@ -96,11 +114,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
     protected virtual void Update()
     {
         if (isDead || playerTransform == null) return;
-        if (!AIEnabled)
-        {
-            agent.isStopped = true;
-            return;
-        }
+        if (!_aiEnabled) return;
 
         attackTimer -= Time.deltaTime;
         float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
