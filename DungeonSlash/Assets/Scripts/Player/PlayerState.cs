@@ -27,7 +27,7 @@ public class PlayerState : MonoBehaviour
     {
         Normal = 0,     // 待机/移动，可以做任何事
         Jumping = 1,    // 跳跃中，不能攻击（可选）
-        Attacking = 2,  // 攻击中，不能跳跃、不能移动转向
+        Attacking = 2,  // 攻击中，可以移动（上下半身分层）
         Hit = 3,        // 受击硬直中，什么都不能做
         Dead = 4        // 死亡，永久锁定
     }
@@ -42,14 +42,14 @@ public class PlayerState : MonoBehaviour
     /// <summary>当前状态，供所有脚本查询</summary>
     public State CurrentState => currentState;
 
-    /// <summary>是否可以攻击：只有 Normal 状态可以</summary>
-    public bool CanAttack => currentState == State.Normal;
+    /// <summary>是否可以攻击：Normal / Jumping / Attacking 状态均可</summary>
+    public bool CanAttack => currentState <= State.Attacking;
 
-    /// <summary>是否可以跳跃：Normal 状态可以</summary>
-    public bool CanJump => currentState == State.Normal;
+    /// <summary>是否可以跳跃：Normal / Jumping / Attacking 状态均可</summary>
+    public bool CanJump => currentState <= State.Attacking;
 
-    /// <summary>是否可以移动：Normal 和 Jumping 可以</summary>
-    public bool CanMove => currentState <= State.Jumping;
+    /// <summary>是否可以移动：Normal / Jumping / Attacking 状态均可</summary>
+    public bool CanMove => currentState <= State.Attacking;
 
     private void Update()
     {
