@@ -72,8 +72,14 @@ public class CutsceneManager : MonoBehaviour
         for (int i = 0; i < foundEnemies.Length; i++)
             speakerMap[$"enemy_{i}"] = foundEnemies[i].gameObject;
 
-        // 🎓 已播过就跳过，static 标记在 Restart（SceneManager.LoadScene）后依然保持 true
-        if (hasPlayedOpeningCutscene) return;
+        // 🎓 已播过就跳过，static 标记在 Restart（SceneManager.LoadScene）后依然保持 true。
+        // 跳过时需手动恢复摄像机优先级为游戏状态，否则 Inspector 默认值可能让 cutsceneCamera 抢占。
+        if (hasPlayedOpeningCutscene)
+        {
+            cutsceneCamera.Priority = 0;
+            followCamera.Priority   = 10;
+            return;
+        }
 
         StartCoroutine(LoadAndPlay());
     }
