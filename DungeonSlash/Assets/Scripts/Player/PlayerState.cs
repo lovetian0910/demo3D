@@ -44,12 +44,14 @@ public class PlayerState : MonoBehaviour
 
     /// <summary>
     /// 是否可以攻击：Normal / Jumping / Attacking 状态均可。
-    /// Attacking 状态下 CanAttack=true 但 EnterAttacking() 是 no-op，
-    /// 允许 PlayerCombat 在动画播完前排队下一次攻击（连击预输入）。
+    /// Attacking 状态下 CanAttack=true 但 EnterAttacking() 是 no-op（不重置状态）。
     /// </summary>
     public bool CanAttack => currentState <= State.Attacking;
 
-    /// <summary>是否可以跳跃：Normal / Jumping 状态可以；攻击中不允许跳跃</summary>
+    /// <summary>
+    /// 是否可以跳跃：Normal / Jumping 状态可以；攻击中不允许跳跃。
+    /// ⚠️ Jumping 状态返回 true，但二次跳跃由 PlayerController.isJumping 守卫拦截。
+    /// </summary>
     public bool CanJump => currentState < State.Attacking;
 
     /// <summary>是否可以移动：Normal / Jumping / Attacking 状态均可</summary>

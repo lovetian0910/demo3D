@@ -76,7 +76,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleMovement()
     {
-        // 🎓 受击/攻击/死亡时不能移动
+        // 🎓 受击/死亡时不能移动；攻击时仍可移动（Animator Layer 分层，上半身播攻击、下半身继续跑）
         if (!playerState.CanMove)
         {
             isMoving = false;
