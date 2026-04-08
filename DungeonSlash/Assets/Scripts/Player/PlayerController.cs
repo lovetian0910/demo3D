@@ -164,7 +164,10 @@ public class PlayerController : MonoBehaviour
         }
 
         // 落地重置
-        if (isJumping && isGrounded && velocity.y <= 0f)
+        // 🎓 只检查 isGrounded 即可，不需要 velocity.y <= 0：
+        // CheckSphere 在起跳后会立刻变 false（角色离地），不存在误触发。
+        // 加上 velocity.y 条件反而在斜面落地时因短暂弹起导致重置失败。
+        if (isJumping && isGrounded)
         {
             isJumping = false;
             playerState.ExitJumping();
