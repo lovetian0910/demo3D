@@ -27,8 +27,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform groundCheck;
     [Tooltip("球形检测半径，需略大于角色底部到地面的间距")]
     [SerializeField] private float groundCheckRadius = 0.2f;
-    [Tooltip("地面所在的 Layer，防止检测到自身或敌人")]
-    [SerializeField] private LayerMask groundLayer;
+    // 🎓 不选 Ground Layer，而是排除 Player 自身层：
+    // ~LayerMask.GetMask("Player") = 除 Player 层以外的所有层，
+    // 地面/墙/障碍物全部能触发，无需在 Inspector 手动配置。
+    private LayerMask groundLayer;
 
     private CharacterController controller;
     private Vector3 velocity;
@@ -59,6 +61,7 @@ public class PlayerController : MonoBehaviour
         playerHealth = GetComponent<PlayerHealth>();
         playerAnimator = GetComponent<PlayerAnimator>();
         playerState = GetComponent<PlayerState>();
+        groundLayer = ~LayerMask.GetMask("Player");
     }
 
     private void Update()
