@@ -8,4 +8,78 @@ AvatarMask:
   m_PrefabAsset: {fileID: 0}
   m_Name: UpperBodyMask
   m_Mask: 00000000010000000100000000000000000000000100000001000000010000000100000000000000000000000100000001000000
-  m_Elements: []
+  m_Elements:
+  - m_Path: 
+    m_Weight: 1
+  - m_Path: Base
+    m_Weight: 0
+  - m_Path: Rig
+    m_Weight: 0
+  - m_Path: RigHeadGizmo
+    m_Weight: 0
+  - m_Path: RigLArm1Gizmo
+    m_Weight: 0
+  - m_Path: RigLArm2Gizmo
+    m_Weight: 0
+  - m_Path: RigLArmPalmGizmo
+    m_Weight: 0
+  - m_Path: RigLLegPlatform
+    m_Weight: 0
+  - m_Path: RigPelvis
+    m_Weight: 0
+  - m_Path: RigPelvis/RigLLeg1
+    m_Weight: 0
+  - m_Path: RigPelvis/RigLLeg1/RigLLeg2
+    m_Weight: 0
+  - m_Path: RigPelvis/RigLLeg1/RigLLeg2/RigLLegAnkle
+    m_Weight: 0
+  - m_Path: RigPelvis/RigRLeg1
+    m_Weight: 0
+  - m_Path: RigPelvis/RigRLeg1/RigRLeg2
+    m_Weight: 0
+  - m_Path: RigPelvis/RigRLeg1/RigRLeg2/RigRLegAnkle
+    m_Weight: 0
+  - m_Path: RigPelvis/RigSpine1
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/Dummy Prop Back
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigLArm1
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigLArm1/RigLArm2
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigLArm1/RigLArm2/RigLArmPalm
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigLArm1/RigLArm2/RigLArmPalm/Dummy
+      Prop Left
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigNeck
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigNeck/RigHead
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigNeck/RigHead/Dummy Prop Head
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigRArm1
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigRArm1/RigRArm2
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigRArm1/RigRArm2/RigRArmPalm
+    m_Weight: 1
+  - m_Path: RigPelvis/RigSpine1/RigSpine2/RigRibcage/RigRArm1/RigRArm2/RigRArmPalm/Dummy
+      Prop Right
+    m_Weight: 1
+  - m_Path: RigPelvisGizmo
+    m_Weight: 0
+  - m_Path: RigRArm1Gizmo
+    m_Weight: 0
+  - m_Path: RigRArm2Gizmo
+    m_Weight: 0
+  - m_Path: RigRArmPalmGizmo
+    m_Weight: 0
+  - m_Path: RigRibcageGizmo
+    m_Weight: 0
+  - m_Path: RigRLegPlatform
+    m_Weight: 0
