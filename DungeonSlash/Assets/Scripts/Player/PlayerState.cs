@@ -26,7 +26,7 @@ public class PlayerState : MonoBehaviour
     public enum State
     {
         Normal = 0,     // 待机/移动，可以做任何事
-        Jumping = 1,    // 跳跃中，不能攻击（可选）
+        Jumping = 1,    // 跳跃中，可攻击（CanAttack=true），不能再跳
         Attacking = 2,  // 攻击中，可以移动（上下半身分层）
         Hit = 3,        // 受击硬直中，什么都不能做
         Dead = 4        // 死亡，永久锁定
@@ -42,11 +42,15 @@ public class PlayerState : MonoBehaviour
     /// <summary>当前状态，供所有脚本查询</summary>
     public State CurrentState => currentState;
 
-    /// <summary>是否可以攻击：Normal / Jumping / Attacking 状态均可</summary>
+    /// <summary>
+    /// 是否可以攻击：Normal / Jumping / Attacking 状态均可。
+    /// Attacking 状态下 CanAttack=true 但 EnterAttacking() 是 no-op，
+    /// 允许 PlayerCombat 在动画播完前排队下一次攻击（连击预输入）。
+    /// </summary>
     public bool CanAttack => currentState <= State.Attacking;
 
-    /// <summary>是否可以跳跃：Normal / Jumping / Attacking 状态均可</summary>
-    public bool CanJump => currentState <= State.Attacking;
+    /// <summary>是否可以跳跃：Normal / Jumping 状态可以；攻击中不允许跳跃</summary>
+    public bool CanJump => currentState < State.Attacking;
 
     /// <summary>是否可以移动：Normal / Jumping / Attacking 状态均可</summary>
     public bool CanMove => currentState <= State.Attacking;
