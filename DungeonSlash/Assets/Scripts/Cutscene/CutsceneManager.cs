@@ -17,6 +17,14 @@ public class CutsceneManager : MonoBehaviour
 {
     public static CutsceneManager Instance { get; private set; }
 
+    /// <summary>
+    /// 🎓 静态标记：记录开场动画是否已在本次游戏进程中播放过。
+    /// static 字段属于类本身，不属于 MonoBehaviour 实例——场景重载会销毁
+    /// 并重建所有 GameObject，但 static 字段的值在进程生命周期内一直保留。
+    /// 因此 Restart（SceneManager.LoadScene）后此值仍为 true，跳过开场动画。
+    /// </summary>
+    private static bool hasPlayedOpeningCutscene = false;
+
     [Header("Cameras")]
     [SerializeField] private CinemachineCamera cutsceneCamera;
     [SerializeField] private CinemachineCamera followCamera;
@@ -63,6 +71,9 @@ public class CutsceneManager : MonoBehaviour
         EnemyBase[] foundEnemies = FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
         for (int i = 0; i < foundEnemies.Length; i++)
             speakerMap[$"enemy_{i}"] = foundEnemies[i].gameObject;
+
+        // 🎓 已播过就跳过，static 标记在 Restart（SceneManager.LoadScene）后依然保持 true
+        if (hasPlayedOpeningCutscene) return;
 
         StartCoroutine(LoadAndPlay());
     }
@@ -113,6 +124,8 @@ public class CutsceneManager : MonoBehaviour
 
     private void BeginCutscene()
     {
+        hasPlayedOpeningCutscene = true;  // 标记已播，Restart 后不再重播
+
         // Freeze player input
         if (playerController != null) playerController.InputEnabled = false;
 
