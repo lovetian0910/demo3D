@@ -62,6 +62,8 @@ public class PlayerController : MonoBehaviour
         playerAnimator = GetComponent<PlayerAnimator>();
         playerState = GetComponent<PlayerState>();
         groundLayer = ~LayerMask.GetMask("Player");
+        // 🎓 Debug.Assert 在开发期快速失败，发布版本会被编译器移除，无性能影响
+        Debug.Assert(groundCheck != null, "[PlayerController] groundCheck 未在 Inspector 中赋值！", this);
     }
 
     private void Update()
@@ -92,8 +94,8 @@ public class PlayerController : MonoBehaviour
         // 🎓 Physics.CheckSphere 在脚底打一个球形检测，只要球碰到 groundLayer 就算落地。
         // 比 controller.isGrounded 更可靠：后者依赖上一帧 Move() 的碰撞结果，
         // 贴墙移动时碰撞解算会把角色微微上推，导致 isGrounded 误报 false。
-        isGrounded = groundCheck != null &&
-                     Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundLayer);
+        // groundCheck 已在 Awake 中 Assert，此处直接使用无需再判 null。
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundLayer);
     }
 
     private void HandleMovement()

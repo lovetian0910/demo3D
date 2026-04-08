@@ -22,8 +22,17 @@ public class CutsceneManager : MonoBehaviour
     /// static 字段属于类本身，不属于 MonoBehaviour 实例——场景重载会销毁
     /// 并重建所有 GameObject，但 static 字段的值在进程生命周期内一直保留。
     /// 因此 Restart（SceneManager.LoadScene）后此值仍为 true，跳过开场动画。
+    ///
+    /// 🎓 RuntimeInitializeOnLoadMethod 确保每次进入 Play Mode 时重置，
+    /// 解决 Unity Editor 中 static 字段不随 Play/Stop 重置的问题。
     /// </summary>
     private static bool hasPlayedOpeningCutscene = false;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void ResetStaticState()
+    {
+        hasPlayedOpeningCutscene = false;
+    }
 
     [Header("Cameras")]
     [SerializeField] private CinemachineCamera cutsceneCamera;
@@ -73,11 +82,10 @@ public class CutsceneManager : MonoBehaviour
             speakerMap[$"enemy_{i}"] = foundEnemies[i].gameObject;
 
         // 🎓 已播过就跳过，static 标记在 Restart（SceneManager.LoadScene）后依然保持 true。
-        // 跳过时需手动恢复摄像机优先级为游戏状态，否则 Inspector 默认值可能让 cutsceneCamera 抢占。
+        // 跳过时需恢复摄像机为游戏状态，否则 Inspector 默认值可能让 cutsceneCamera 抢占。
         if (hasPlayedOpeningCutscene)
         {
-            cutsceneCamera.Priority = 0;
-            followCamera.Priority   = 10;
+            RestoreCameraToGameplay();
             return;
         }
 
@@ -208,8 +216,6 @@ public class CutsceneManager : MonoBehaviour
         StartCoroutine(RestoreInputNextFrame());
 
         // Restore enemy AI
-
-        // Restore enemy AI
         foreach (var kvp in speakerMap)
         {
             var eb = kvp.Value.GetComponent<EnemyBase>();
@@ -217,8 +223,7 @@ public class CutsceneManager : MonoBehaviour
         }
 
         // Return camera to follow view
-        cutsceneCamera.Priority = 0;
-        followCamera.Priority   = 10;
+        RestoreCameraToGameplay();
 
         // Hide UI
         dialogueUI.Hide();
@@ -241,6 +246,16 @@ public class CutsceneManager : MonoBehaviour
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 将摄像机优先级恢复为游戏状态（FollowCamera 生效，CutsceneCamera 退出）。
+    /// 在两处调用：① 跳过开场动画时，② 开场动画正常结束时。
+    /// </summary>
+    private void RestoreCameraToGameplay()
+    {
+        cutsceneCamera.Priority = 0;
+        followCamera.Priority   = 10;
+    }
 
     private GameObject ResolveSpeaker(string speaker)
     {
