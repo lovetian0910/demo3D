@@ -22,10 +22,19 @@ public class PlayerController : MonoBehaviour
     [Header("Fall Death")]
     [SerializeField] private float fallDeathY = -20f;
 
+    [Header("Ground Check")]
+    [Tooltip("挂在角色脚底的空对象，用于地面球形检测")]
+    [SerializeField] private Transform groundCheck;
+    [Tooltip("球形检测半径，需略大于角色底部到地面的间距")]
+    [SerializeField] private float groundCheckRadius = 0.2f;
+    [Tooltip("地面所在的 Layer，防止检测到自身或敌人")]
+    [SerializeField] private LayerMask groundLayer;
+
     private CharacterController controller;
     private Vector3 velocity;
     private bool isMoving;
     private bool isJumping;
+    private bool isGrounded;   // 🎓 用 CheckSphere 替代 controller.isGrounded，避免贴墙时误判
     private float coyoteTimer;
     private float jumpBufferTimer;
     private PlayerHealth playerHealth;
@@ -42,7 +51,7 @@ public class PlayerController : MonoBehaviour
     public bool IsRolling => false;
     public bool IsMoving => isMoving;
     public bool IsJumping => isJumping;
-    public bool IsGrounded => controller.isGrounded;
+    public bool IsGrounded => isGrounded;
 
     private void Awake()
     {
@@ -69,9 +78,19 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        UpdateGrounded();
         HandleMovement();
         HandleJump();
         ApplyGravity();
+    }
+
+    private void UpdateGrounded()
+    {
+        // 🎓 Physics.CheckSphere 在脚底打一个球形检测，只要球碰到 groundLayer 就算落地。
+        // 比 controller.isGrounded 更可靠：后者依赖上一帧 Move() 的碰撞结果，
+        // 贴墙移动时碰撞解算会把角色微微上推，导致 isGrounded 误报 false。
+        isGrounded = groundCheck != null &&
+                     Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundLayer);
     }
 
     private void HandleMovement()
@@ -111,7 +130,7 @@ public class PlayerController : MonoBehaviour
     private void HandleJump()
     {
         // Coyote Time
-        if (controller.isGrounded && !isJumping)
+        if (isGrounded && !isJumping)
         {
             coyoteTimer = coyoteTime;
         }
@@ -142,7 +161,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // 落地重置
-        if (isJumping && controller.isGrounded && velocity.y <= 0f)
+        if (isJumping && isGrounded && velocity.y <= 0f)
         {
             isJumping = false;
             playerState.ExitJumping();
@@ -151,7 +170,7 @@ public class PlayerController : MonoBehaviour
 
     private void ApplyGravity()
     {
-        if (controller.isGrounded && velocity.y < 0f)
+        if (isGrounded && velocity.y < 0f)
         {
             velocity.y = -2f;
         }
