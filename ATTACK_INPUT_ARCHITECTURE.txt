@@ -1,0 +1,184 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    ATTACK INPUT SYSTEM ARCHITECTURE                            ║
+║                      (learn-3d/DungeonSlash Project)                          ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ INPUT LAYER (Unity Legacy Input Manager)                                       │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Mouse Left Button          Mouse Right Button       Keyboard 1/2/3           │
+│          │                           │                      │                   │
+│          └───────────────────────────┴──────────────────────┘                  │
+│                                │                                                │
+│                    Input.GetMouseButtonDown()                                   │
+│                    Input.GetKeyDown(KeyCode)                                    │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ GUARD LAYER - PlayerCombat.cs (Line 56-103)                                    │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌──────────────────────────────────────────────────────────────────────┐      │
+│  │ Update() - Run Every Frame                                           │      │
+│  ├──────────────────────────────────────────────────────────────────────┤      │
+│  │                                                                      │      │
+│  │  [Check 1] if (isAttacking) {                                      │      │
+│  │      Handle ongoing attack (collision timing)                      │      │
+│  │  }                                                                  │      │
+│  │                                                                      │      │
+│  │  [Check 2] if (!HasWeapon) return;                                 │      │
+│  │      No weapon equipped                                             │      │
+│  │                                                                      │      │
+│  │  [Check 3] if (!playerState.CanAttack) return;                    │      │
+│  │      ├─ Rejects: Hit state, Dead state                             │      │
+│  │      ├─ Allows: Normal, Jumping, Attacking                         │      │
+│  │      └─ [GUARD: PlayerState.cs Line 49]                           │      │
+│  │                                                                      │      │
+│  │  [Check 4] if (playerController != null &&                         │      │
+│  │              !playerController.InputEnabled) return;               │      │
+│  │      Cutscene active - disable input                              │      │
+│  │                                                                      │      │
+│  │  [Check 5] if (Input.GetMouseButtonDown(0) &&                     │      │
+│  │              attackCooldownTimer <= 0f)                            │      │
+│  │      ├─ LEFT MOUSE → StartLightAttack()                           │      │
+│  │      └─ Continue...                                                 │      │
+│  │                                                                      │      │
+│  │  [Check 6] if (Input.GetMouseButtonDown(1) &&                     │      │
+│  │              attackCooldownTimer <= 0f)                            │      │
+│  │      └─ RIGHT MOUSE → StartHeavyAttack()                          │      │
+│  │                                                                      │      │
+│  └──────────────────────────────────────────────────────────────────────┘      │
+│                                                                                 │
+│                                                                                 │
+│  ┌─────────────────────────────┐   ┌─────────────────────────────┐            │
+│  │   StartLightAttack()        │   │   StartHeavyAttack()        │            │
+│  │   (Line 105)                │   │   (Line 119)                │            │
+│  ├─────────────────────────────┤   ├─────────────────────────────┤            │
+│  │ ✓ isAttacking = true        │   │ ✓ isAttacking = true        │            │
+│  │ ✓ Damage: 15                │   │ ✓ Damage: 30                │            │
+│  │ ✓ Cooldown: 0.5s            │   │ ✓ Cooldown: 1.2s            │            │
+│  │ ✓ HitDelay: 0.3s            │   │ ✓ HitDelay: 0.45s           │            │
+│  │ ✓ HitDuration: 0.2s         │   │ ✓ HitDuration: 0.25s        │            │
+│  │ ✓ Collider: Left Hand       │   │ ✓ Collider: Right Hand      │            │
+│  │ → playerState.EnterAttacking()   │ → playerState.EnterAttacking()           │
+│  │ → playerAnimator.PlayLightAttack()   │ → playerAnimator.PlayHeavyAttack()  │
+│  │ → AutoAimToNearestEnemy()   │   │ → AutoAimToNearestEnemy()   │            │
+│  └─────────────────────────────┘   └─────────────────────────────┘            │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                   ┌──────────────────┼──────────────────┐
+                   │                  │                  │
+                   ▼                  ▼                  ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ EXECUTION LAYER                                                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  PlayerState.cs              PlayerAnimator.cs        WeaponManager.cs         │
+│  ─────────────────          ──────────────────        ──────────────────       │
+│  EnterAttacking()           PlayLightAttack()         AutoAimToNearestEnemy()  │
+│  ├─ SetState(Attacking)     │                        ├─ Physics.OverlapSphere()│
+│  └─ Blocks further attacks  └─ SetTrigger("Light")   └─ Rotate to nearest     │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ COLLISION TIMING LAYER (PlayerCombat.cs Line 60-82)                            │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Timeline of Attack:                                                           │
+│   ─────────────────────────────────────────────────────────────────────        │
+│                                                                                 │
+│   Frame 0:      Input pressed                                                  │
+│                 ↓ StartLightAttack()                                           │
+│   Frame 0-9:    Animation playing, hitTimer counting down                      │
+│                 hitTimer = 0.3s (lightHitDelay)                               │
+│   Frame 10:     hitTimer <= 0 ✓                                               │
+│                 ↓ OnAttackHitStart()                                           │
+│                 ↓ activeCollider.enabled = true                               │
+│   Frame 10-15:  Collision active, hitActive = true                            │
+│                 hitTimer = 0.2s (lightHitDuration)                            │
+│   Frame 16:     hitTimer <= 0 ✓                                               │
+│                 ↓ OnAttackHitEnd()                                             │
+│                 ↓ activeCollider.enabled = false                              │
+│                 ↓ isAttacking = false                                         │
+│                 ↓ playerState.ExitAttacking()                                 │
+│   Frame 16+:    Ready for next attack                                         │
+│                 (after cooldown expires)                                       │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ DAMAGE DETECTION LAYER (WeaponHitbox.cs)                                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  When collision box active:                                                     │
+│  OnTriggerEnter(Collider other)                                                │
+│  ├─ Check if target has IDamageable                                           │
+│  ├─ PlayerCombat.OnWeaponHit(other)                                           │
+│  └─ DamageSystem.DealDamage(other, damage, hitPosition)                       │
+│                                                                                 │
+│  When collision box inactive:                                                   │
+│  ├─ No trigger detection (early frames of animation)                          │
+│  └─ No damage dealt                                                             │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                           STATE MACHINE OVERVIEW                               ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+                          PlayerState.cs - State Enum
+                          ──────────────────────────
+                          
+    Normal (0)  →  Jumping (1)  →  Attacking (2)  →  Hit (3)  →  Dead (4)
+       ▲              ▲                  ▲                             │
+       │              │                  │                             │
+       └──────────────┴──────────────────┘                             │
+                      │                                                │
+                      └────────────────────────────────────────────────┘
+                      
+    Attack can trigger from: Normal, Jumping, Attacking (won't restart)
+    Attack BLOCKED in: Hit, Dead
+    
+    Hit can interrupt: All lower-priority states
+    Dead: Terminal state
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                          WEAPON SWITCHING FLOW                                 ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+    WeaponManager.cs Update() Line 82-84
+    ───────────────────────────────────
+    
+    [Key 1]  ──→  SwitchWeapon(0)
+                 ├─ Guard: !playerCombat.IsAttacking
+                 ├─ Destroy old weapons (left & right)
+                 ├─ Spawn new instances
+                 ├─ Call PlayerCombat.EquipWeapon()
+                 └─ Ready for next attack
+    
+    [Key 2]  ──→  SwitchWeapon(1)
+                 └─ Same flow
+    
+    [Key 3]  ──→  SwitchWeapon(2)
+                 └─ Same flow
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                       KEY SYSTEM CHARACTERISTICS                               ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+Input Method:          Legacy Input Manager (Input.GetMouseButtonDown)
+NOT Used:              New Input System / InputActions (despite .inputactions file)
+State Protection:      Comprehensive - prevents invalid state transitions
+Timing Mechanism:      Frame-based counters (hitTimer, attackCooldownTimer)
+Collision Enabled:     Only during attack window (0.3s-0.5s after animation start)
+Auto-Aim Radius:       5 meters (configurable in PlayerCombat)
+Interrupt Handling:    Hit/Dead states cancel ongoing attacks automatically
+Weapon System:         Dual-wield with independent left/right hand colliders
+

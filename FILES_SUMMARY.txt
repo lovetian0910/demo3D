@@ -1,0 +1,325 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║            ATTACK INPUT HANDLING - FILES & ANALYSIS SUMMARY                   ║
+║                    Project: learn-3d (DungeonSlash)                           ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+📋 DOCUMENTS GENERATED
+════════════════════════════════════════════════════════════════════════════════
+
+1. ATTACK_INPUT_ANALYSIS.md
+   └─ Full technical analysis with code examples
+   └─ 8 major sections with detailed explanations
+   └─ State machine documentation
+   └─ Modification recommendations
+
+2. ATTACK_INPUT_QUICK_REFERENCE.md
+   └─ Quick lookup table format
+   └─ Common issues & solutions
+   └─ Key file locations (1-6 priority)
+   └─ Debug checklist
+
+3. ATTACK_INPUT_ARCHITECTURE.txt
+   └─ Visual ASCII diagrams
+   └─ Data flow from input to damage
+   └─ State machine overview
+   └─ Timeline of attack execution
+
+4. FILES_SUMMARY.txt (this file)
+   └─ Complete file listing with annotations
+
+
+🎯 KEY FINDINGS
+════════════════════════════════════════════════════════════════════════════════
+
+✓ Input System:         OLD INPUT MANAGER (not new Input System)
+✓ Primary Input:        Input.GetMouseButtonDown(0|1) for attacks
+✓ State Guards:         Comprehensive PlayerState machine
+✓ Inputactions File:    EXISTS but UNUSED (appears to be template)
+
+
+📁 CRITICAL FILES - ATTACK INPUT HANDLING
+════════════════════════════════════════════════════════════════════════════════
+
+⭐⭐⭐ PRIMARY (READ/MODIFY FIRST)
+───────────────────────────────────
+
+1. PlayerCombat.cs
+   Location: DungeonSlash/Assets/Scripts/Player/PlayerCombat.cs
+   Priority: CRITICAL - Main attack logic
+   Key Content:
+   ├─ Line 95: Input.GetMouseButtonDown(0) - Light attack
+   ├─ Line 99: Input.GetMouseButtonDown(1) - Heavy attack
+   ├─ Line 105: StartLightAttack() - Light attack handler
+   ├─ Line 119: StartHeavyAttack() - Heavy attack handler
+   └─ Line 65-70: Hit interruption logic
+   
+   Methods: Update(), StartLightAttack(), StartHeavyAttack(),
+            OnAttackHitStart(), OnAttackHitEnd(), AutoAimToNearestEnemy()
+
+
+⭐⭐ SECONDARY (UNDERSTAND FLOW)
+────────────────────────────────
+
+2. PlayerState.cs
+   Location: DungeonSlash/Assets/Scripts/Player/PlayerState.cs
+   Priority: HIGH - State machine & guards
+   Key Content:
+   ├─ Line 49: CanAttack property - PRIMARY GUARD
+   ├─ Line 26-33: State enum (Normal, Jumping, Attacking, Hit, Dead)
+   ├─ Line 80: EnterAttacking() - Called by PlayerCombat
+   └─ Line 92: ExitAttacking() - Called by PlayerCombat
+   
+   Methods: EnterAttacking(), ExitAttacking(), EnterHit(), EnterDead(),
+            CanAttack, CanJump, CanMove properties
+
+
+3. WeaponManager.cs
+   Location: DungeonSlash/Assets/Scripts/Player/WeaponManager.cs
+   Priority: HIGH - Weapon switching & dual-wield
+   Key Content:
+   ├─ Line 82-84: Weapon switching input (Keys 1/2/3)
+   ├─ Line 107: SwitchWeapon() - Main switching logic
+   ├─ Line 116: Guard check - Won't switch during attack
+   └─ Line 144: EquipWeapon() call to PlayerCombat
+   
+   Methods: SwitchWeapon(), SpawnWeapon(), SetupWeaponCollider(),
+            FindBoneRecursive()
+
+
+⭐ SUPPORTING (INTEGRATED SYSTEMS)
+───────────────────────────────────
+
+4. PlayerAnimator.cs
+   Location: DungeonSlash/Assets/Scripts/Player/PlayerAnimator.cs
+   Purpose: Animation trigger system
+   Key Content:
+   ├─ Line 54: PlayLightAttack() - SetTrigger("LightAttack")
+   ├─ Line 59: PlayHeavyAttack() - SetTrigger("HeavyAttack")
+   └─ Uses Triggers (not Bools) for one-shot animations
+   
+   Methods: PlayLightAttack(), PlayHeavyAttack(), PlayJump(),
+            PlayHit(), PlayDeath()
+
+
+5. WeaponData.cs
+   Location: DungeonSlash/Assets/Scripts/Combat/WeaponData.cs
+   Purpose: Attack parameter storage (ScriptableObject)
+   Key Content:
+   ├─ Line 28-31: Damage values (lightDamage=15, heavyDamage=30)
+   ├─ Line 33-37: Cooldowns (light=0.5s, heavy=1.2s)
+   ├─ Line 40-50: Hit timing (delay + duration)
+   └─ Line 52-71: Position/rotation offsets for dual-wield
+   
+   Fields: lightDamage, heavyDamage, lightAttackCooldown,
+           lightHitDelay, lightHitDuration, etc.
+
+
+6. WeaponHitbox.cs
+   Location: DungeonSlash/Assets/Scripts/Combat/WeaponHitbox.cs
+   Purpose: Trigger collision detection during attack window
+   Key Content:
+   ├─ OnTriggerEnter(Collider) - Detects hits
+   └─ Calls PlayerCombat.OnWeaponHit()
+
+
+📄 REFERENCE FILES
+════════════════════════════════════════════════════════════════════════════════
+
+⚠️ .inputactions FILE (Present but NOT USED)
+
+InputSystem_Actions.inputactions
+└─ Location: DungeonSlash/Assets/InputSystem_Actions.inputactions
+└─ Status: TEMPLATE/UNUSED - Game uses old Input Manager instead
+└─ Contains:
+   ├─ Player Action Map (Move, Look, Attack, Interact, etc.)
+   ├─ Attack action defined (Button type)
+   └─ Multiple device bindings (Mouse, Gamepad, Touch, XR)
+   
+   Attack Bindings in .inputactions:
+   ├─ Mouse Left Button
+   ├─ Gamepad West (Y)
+   ├─ Touchscreen Tap
+   ├─ Keyboard Enter
+   └─ XR Controller Primary Action
+
+
+SECONDARY/SUPPORTING FILES
+───────────────────────────
+
+PlayerController.cs
+└─ Location: DungeonSlash/Assets/Scripts/Player/PlayerController.cs
+└─ Purpose: Movement & InputEnabled flag
+└─ InputEnabled property controls whether input is processed
+
+
+CutsceneManager.cs
+└─ Location: DungeonSlash/Assets/Scripts/Cutscene/CutsceneManager.cs
+└─ Uses: Input.GetMouseButtonDown(0) for cutscene skipping
+└─ Related: Sets PlayerController.InputEnabled = false during cutscenes
+
+
+CameraController.cs
+└─ Location: DungeonSlash/Assets/TextMesh Pro/Examples & Extras/Scripts/
+└─ Purpose: Camera control (example script)
+└─ Not part of attack system
+
+
+DamageSystem.cs
+└─ Location: DungeonSlash/Assets/Scripts/Combat/DamageSystem.cs
+└─ Purpose: Applies damage when attack hits
+
+
+IDamageable.cs
+└─ Location: DungeonSlash/Assets/Scripts/Combat/IDamageable.cs
+└─ Purpose: Interface for damageable objects
+
+
+🔍 CODE SEARCH RESULTS
+════════════════════════════════════════════════════════════════════════════════
+
+Files containing attack-related keywords:
+
+PlayerCombat.cs
+├─ Line 95: if (Input.GetMouseButtonDown(0) && attackCooldownTimer <= 0f)
+├─ Line 99: else if (Input.GetMouseButtonDown(1) && attackCooldownTimer <= 0f)
+└─ Lines 105, 119, 193, 201: Attack methods
+
+PlayerState.cs
+├─ Line 49: public bool CanAttack => currentState <= State.Attacking;
+├─ Line 80: public void EnterAttacking()
+└─ Line 92: public void ExitAttacking()
+
+PlayerAnimator.cs
+├─ Line 54: public void PlayLightAttack()
+└─ Line 59: public void PlayHeavyAttack()
+
+WeaponManager.cs
+├─ Line 82-84: Weapon switching with Input.GetKeyDown()
+└─ Line 116: Guard: !playerCombat.IsAttacking
+
+CutsceneManager.cs
+├─ Line 98: if (Input.GetMouseButtonDown(0))
+└─ Line 239: Comment about GetMouseButtonDown triggering attacks
+
+CameraController.cs
+├─ Line 150: if (Input.GetMouseButton(1))
+├─ Line 199: if (Input.GetMouseButton(0))
+└─ Line 222: if (Input.GetMouseButton(2))
+
+
+🎬 ATTACK PARAMETER DEFAULTS (from WeaponData.cs)
+════════════════════════════════════════════════════════════════════════════════
+
+Light Attack (Left Mouse Button):
+├─ Damage: 15
+├─ Cooldown: 0.5 seconds
+├─ Hit Delay: 0.3 seconds (when collision enables)
+├─ Hit Duration: 0.2 seconds (how long collision stays on)
+└─ Weapon: Left hand
+
+Heavy Attack (Right Mouse Button):
+├─ Damage: 30 (2x light)
+├─ Cooldown: 1.2 seconds
+├─ Hit Delay: 0.45 seconds (longer wind-up)
+├─ Hit Duration: 0.25 seconds
+└─ Weapon: Right hand
+
+
+🛡️ GUARDS & SAFETY CHECKS
+════════════════════════════════════════════════════════════════════════════════
+
+Order of Execution in PlayerCombat.Update():
+
+1. Ongoing Attack Check
+   └─ if (isAttacking) { /* handle timing */ return; }
+
+2. Weapon Check
+   └─ if (!HasWeapon) return;
+
+3. STATE GUARD (Primary)
+   └─ if (!playerState.CanAttack) return;
+   └─ Blocks: Hit state, Dead state
+   └─ Allows: Normal, Jumping, Attacking
+
+4. Cutscene Check
+   └─ if (playerController != null && !playerController.InputEnabled) return;
+
+5. Cooldown Check
+   └─ if (attackCooldownTimer > 0f) return;
+
+6. Input Check (Finally!)
+   └─ if (Input.GetMouseButtonDown(0)) ...
+
+
+📊 STATE MACHINE (PlayerState.cs)
+════════════════════════════════════════════════════════════════════════════════
+
+Enum Values (Priority Order):
+├─ Normal (0) - Default state, can do anything
+├─ Jumping (1) - Mid-jump, can attack
+├─ Attacking (2) - Attack in progress, can move
+├─ Hit (3) - Being hit, CANNOT do anything
+└─ Dead (4) - Dead, permanent terminal state
+
+State Transitions:
+├─ Normal ←→ Jumping ✓
+├─ Normal ←→ Attacking ✓
+├─ Jumping → Attacking ✓
+├─ Attacking → Normal (after attack ends) ✓
+├─ Any ← Hit ✓ (can interrupt anything)
+├─ Any ← Dead ✓ (can interrupt anything)
+└─ Dead → (nothing) ✗ Terminal state
+
+
+🎯 WHERE TO MODIFY
+════════════════════════════════════════════════════════════════════════════════
+
+Add New Attack Input:
+├─ File: PlayerCombat.cs
+├─ Location: Update() method (after line 102)
+└─ Code: else if (Input.GetMouseButtonDown(2)) StartSpecialAttack();
+
+Change Attack Damage:
+├─ File: Inspector → Weapon asset (no code edit needed)
+└─ Field: lightDamage / heavyDamage
+
+Change Attack Speed:
+├─ File: Inspector → Weapon asset
+└─ Field: lightAttackCooldown / heavyAttackCooldown
+
+Change Hit Timing:
+├─ File: Inspector → Weapon asset
+└─ Fields: lightHitDelay, lightHitDuration
+
+Disable Input During Event:
+├─ File: Your event handler
+└─ Code: playerController.InputEnabled = false;
+
+
+✅ VERIFICATION CHECKLIST
+════════════════════════════════════════════════════════════════════════════════
+
+□ Attack inputs are read from Input.GetMouseButtonDown(0|1) ✓
+□ State machine prevents invalid attacks ✓
+□ Collision timing is controlled by hitTimer ✓
+□ .inputactions file exists but is unused ✓
+□ Weapon switching works with numeric keys ✓
+□ Auto-aim targets nearest enemy ✓
+□ Hit/Dead states interrupt attacks ✓
+□ Dual-wield with independent colliders ✓
+□ Weapon offsets configurable via ScriptableObject ✓
+
+
+📞 QUICK REFERENCE
+════════════════════════════════════════════════════════════════════════════════
+
+Attack triggered by:              PlayerCombat.Update() Line 95, 99
+State protection:                 PlayerState.CanAttack (Line 49)
+Animation triggered by:           PlayerAnimator.PlayLightAttack/Heavy (Line 54, 59)
+Collision enabled by:             PlayerCombat.OnAttackHitStart() (Line 193)
+Collision disabled by:            PlayerCombat.OnAttackHitEnd() (Line 201)
+Weapon switch input:              WeaponManager.Update() (Line 82-84)
+Weapon configuration:             WeaponData ScriptableObject
+Auto-aim search:                  PlayerCombat.AutoAimToNearestEnemy() (Line 144)
+State machine:                    PlayerState.cs
+

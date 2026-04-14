@@ -92,11 +92,13 @@ public class PlayerCombat : MonoBehaviour
         // 剧情演出时禁止攻击输入
         if (playerController != null && !playerController.InputEnabled) return;
 
-        if (Input.GetMouseButtonDown(0) && attackCooldownTimer <= 0f)
+        // 🎓 支持鼠标 + 键盘双输入：用 || 让任意一种都能触发
+        // J = 轻攻击，K = 重攻击（动作游戏经典键位，没鼠标时也能玩）
+        if ((Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.J)) && attackCooldownTimer <= 0f)
         {
             StartLightAttack();
         }
-        else if (Input.GetMouseButtonDown(1) && attackCooldownTimer <= 0f)
+        else if ((Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.K)) && attackCooldownTimer <= 0f)
         {
             StartHeavyAttack();
         }

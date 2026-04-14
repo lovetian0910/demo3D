@@ -95,7 +95,7 @@ public class CutsceneManager : MonoBehaviour
     private void Update()
     {
         if (!waitingForClick) return;
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.Space))
         {
             waitingForClick = false;
             AdvanceLine();
